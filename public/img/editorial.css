@@ -1,0 +1,183 @@
+
+#demandeur{
+  border: 1px solid black;
+  border-radius: 20px;
+  padding: 2%;
+}
+
+/* MODIFICATION DU CONTAINER */
+.home_cadre {
+  --bs-gutter-x: 1.5rem;
+  --bs-gutter-y: 0;
+  width: 65%;
+  padding-right: calc(var(--bs-gutter-x) * 0.5);
+  padding-left: calc(var(--bs-gutter-x) * 0.5);
+  /* margin-right: auto; */
+  margin-left: 5%;
+}
+
+
+
+
+
+
+
+
+.hr {
+  /* centre verticalement les enfants entre eux */
+  align-items: center;
+
+  /* active flexbox */
+  display: flex;
+
+  /* garde le texte centré s’il passe sur plusieurs lignes ou si flexbox n’est pas supporté */
+  text-align: center;
+}
+
+.hr::before,
+.hr::after {
+  /* remplir le fond du trait permet également d’utiliser des images ou dégradés ! */
+  background: currentColor;
+
+  /* nécessaire pour afficher les pseudo-éléments */
+  content: "";
+
+  /* partage le reste de la largeur disponible */
+  flex: 1;
+
+  /* l’unité « em » garantit un ratio constant avec la taille du texte */
+  height: .025em;
+
+  /* espace les traits du texte */
+  margin: 0 .5em;
+}
+
+
+
+.hrp {
+  border: none;
+  border-top: 3px double rgb(0, 0, 0);
+  color: rgb(0, 0, 0);
+  overflow: visible;
+  text-align: center;
+  height: 5px;
+}
+
+.hrp:after {
+  background: rgb(14, 14, 14);
+  content: '§';
+  padding: 0 4px;
+  position: relative;
+  top: -13px;
+}
+
+
+
+#carte{
+  height: 130px;
+}
+/* #cadre_carte{
+  width: 20%;
+  /* height: 10%;
+}*/
+
+#quitance{
+  letter-spacing: 0.357em;
+}
+.tb{
+  color: #fff;
+}
+.tn{
+  color: #000;
+}
+.center{
+  text-align:center
+}
+.cformulaire{
+  padding-top: 1%;
+}
+.bcadre{
+  background-color: #99B4BF;
+  border-radius: 10px;
+  padding: 0.90em;
+}
+
+.bcadre2{
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 0.90em;
+  height: 40%;
+}
+.photo{
+  background-color: beige;
+  margin: 0 auto;
+  width: 40%;
+  height: 30%;
+  border: 3px dashed   black;
+}
+.check_form{
+  padding-top: 5%;
+  margin-left: 2%;
+}
+.check_form>div{
+  height: 450px;
+}
+
+.input{
+  /* background-color: #2d4b73; */
+  padding: 2%;
+  border-radius: 20px;
+}
+input {
+  border-top-style: hidden;
+  border-right-style: hidden;
+  border-left-style: hidden;
+  border-bottom-style: groove;
+  background-color: #eee;
+}
+
+input[type=text],[type=search],[type=date],[type=date] {
+  border: 1px solid black;
+  border-radius: 4px;
+}
+input[type=text],[type=search]:focus {
+  border: 1px solid black;
+  border-radius: 4px;
+}
+.bb{
+  background-color: #2d4b73;
+  color: #fff;
+}
+.bb:active{
+  background-color: #2d4b73;
+  color: #fff;
+}
+.bo{
+  background-color: #ff8e31;
+  color: #fff;
+}
+.bo:active{
+  background-color: #ff8e31;
+  color: #fff;
+}
+.search{
+  height: 100%;
+}
+
+
+.fctber{
+  margin: 4%;
+}
+
+.bnoir{
+    background-color: #000;
+    font-family: "Raleway", sans-serif;
+    letter-spacing: 0.357em;
+  }
+
+
+
+/* MODIFICATION LAYOUT */
+#resume{
+  background-color: #eee;
+}
