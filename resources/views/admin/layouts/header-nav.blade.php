@@ -194,14 +194,14 @@ header nav
                 </ul>
             </li>
             @endcan
-            @can("system.view")
+            {{-- @can("system.view")
             <li class=" nav-item"><a href="#"><i class="la la-list"></i><span class="menu-title" data-i18n="Templates">Liste alerte</span></a>
                 <ul class="menu-content">
                     <li><a class="menu-item" href="{{ route("liste-alerte.index") }}"><i></i><span data-i18n="Vertical">Liste</span></a></li>
                     <li><a class="menu-item" href="{{ route("liste-alerte.create") }}"><i></i><span data-i18n="Vertical">Ajouter</span></a></li>
                 </ul>
             </li>
-            @endcan
+            @endcan --}}
             </ul>
         </div>
     </div>

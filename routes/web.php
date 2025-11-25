@@ -113,6 +113,7 @@ Route::middleware("auth")->group(function(){
             Route::get("create","create")->name("demandes.create")->middleware("can:demandes.create");
             Route::get("new-visa","newvisa")->name("demandes.newvisa")->middleware("can:demandes.create");
             Route::get("new-crt","newcrt")->name("demandes.newcrt")->middleware("can:demandes.create");
+            Route::get("new-diplomate","diplomate")->name("demandes.newdiplomate")->middleware("can:demandes.create");
             Route::get("recherche","search")->name("demandes.search.form");
             Route::get("proche-expiration","procheExpiration")->name("demandes.proche.expiration")->middleware("can:demandes.view.all");
             Route::get("export-to-json", "exportToJson")->name("demandes.exporttojson")->middleware("can:demandes.destroy");
@@ -286,18 +287,18 @@ Route::middleware("auth")->group(function(){
     });
 
     //Route de ma liste d'alerte
-    Route::prefix("liste-alerte")->group(function(){
-        Route::controller(ListeAlertController::class)->group(function(){
-            Route::get("/","index")->name("liste-alerte.index");
-            Route::get("/create","create")->name("liste-alerte.create");
-            Route::get("/show/{id}","show")->name("liste-alerte.show");
-            Route::post("/store","store")->name("liste-alerte.store");
+    // Route::prefix("liste-alerte")->group(function(){
+    //     Route::controller(ListeAlertController::class)->group(function(){
+    //         Route::get("/","index")->name("liste-alerte.index");
+    //         Route::get("/create","create")->name("liste-alerte.create");
+    //         Route::get("/show/{id}","show")->name("liste-alerte.show");
+    //         Route::post("/store","store")->name("liste-alerte.store");
 
-        });
-    });
+    //     });
+    // });
 });
 
-
+Route::get("flux/get-frontieres-by-departement/{id}",[FluxMigratoireController::class,"getFrontieresByDepartement"])->name("flux.getFrontieresByDepartement");
 
 Auth::routes();
 

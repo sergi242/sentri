@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+
 class Contentieux extends Model
 {
     use HasFactory;
@@ -12,6 +13,7 @@ class Contentieux extends Model
 
     public function demande()
     {
+        
         return $this->belongsTo(Demande::class, 'demandes_id', 'id');
     }
 

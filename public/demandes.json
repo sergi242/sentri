@@ -1,0 +1,786 @@
+[
+    {
+        "id": 1,
+        "nom": "LASSISSI",
+        "prenom": "Moussa",
+        "sexe": "Masculin",
+        "date_naissance": "1982-11-23",
+        "lieu_naissance": "Adjara",
+        "nationalites_id": 24,
+        "nom_pere": "Adegninie",
+        "prenom_pere": "Moussemilou",
+        "nom_mere": "Houeto",
+        "prenom_mere": "Aichatou",
+        "unique_string": "LASSISSIMOUSSAMASCULIN1982-11-2324",
+        "users_id": null,
+        "created_at": "2024-02-16T13:24:35.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 1,
+                "impetrant_id": 1,
+                "pays_id": 24,
+                "created_at": "2025-07-25T14:20:50.000000Z",
+                "updated_at": "2025-07-25T14:20:50.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 1,
+                "impetrants_id": 1,
+                "numero_ancien_document": null,
+                "photo": "demandes\/XYiFnPTxsQ0I6iJCJHEg1XAMF2mMDjqJaMPeYVF0.jpg",
+                "numero_document": "000180350",
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": "2024-02-02",
+                "date_expiration": "2025-02-01",
+                "quartiers_id": 59,
+                "avenue_rue": ".",
+                "numero_adresse": ".",
+                "telephone": "069343332",
+                "email": ".",
+                "profession": "Frigotiste",
+                "employeur_id": 2,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2024-02-02",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": null,
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": "exporte",
+                "approval_date": null,
+                "uuid": "001_16022024_0000000001",
+                "created_at": "2024-02-16T13:24:35.000000Z",
+                "updated_at": "2025-02-21T22:32:29.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 1,
+                "date_attribution": "2024-02-16 14:34:52",
+                "categorie_socioprof_id": 20,
+                "soit_transmis_id": null,
+                "categorie_professionnelle": {
+                    "id": 20,
+                    "categorie": "Sportif"
+                },
+                "employeur": {
+                    "id": 2,
+                    "nom_employeur": "BSCA BANK",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 59,
+                    "lib_quartier": "Grand-March\u00e9",
+                    "arrondissements_id": 6,
+                    "code_quartier": null,
+                    "created_at": "2024-02-16T12:47:50.000000Z",
+                    "updated_at": "2024-02-16T12:47:50.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 6,
+                        "lib_arrondissement": "LUMUMBA",
+                        "departements_id": 2,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 2,
+                            "lib_departement": "POINTE-NOIRE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "nom": "BALADE",
+        "prenom": "Hamidou",
+        "sexe": "Masculin",
+        "date_naissance": "2003-05-22",
+        "lieu_naissance": "Sare Konco",
+        "nationalites_id": 197,
+        "nom_pere": "Balde",
+        "prenom_pere": "mamadou",
+        "nom_mere": "Diao",
+        "prenom_mere": "Rmatoulaye",
+        "unique_string": "BALADEHAMIDOUMASCULIN2003-05-22197",
+        "users_id": null,
+        "created_at": "2024-02-16T13:30:05.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 2,
+                "impetrant_id": 2,
+                "pays_id": 197,
+                "created_at": "2025-07-25T14:20:50.000000Z",
+                "updated_at": "2025-07-25T14:20:50.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 2,
+                "impetrants_id": 2,
+                "numero_ancien_document": null,
+                "photo": "demandes\/mbYAP7M926Pz0vSkjtgzqufGn8ktLezFoEP3rl1X.png",
+                "numero_document": "000169363",
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": "2023-09-05",
+                "date_expiration": "2024-09-04",
+                "quartiers_id": 11,
+                "avenue_rue": ".",
+                "numero_adresse": ".",
+                "telephone": "069715012",
+                "email": "r.@com",
+                "profession": "Employer de commerce",
+                "employeur_id": 3,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2023-09-05",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": null,
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": "exporte",
+                "approval_date": null,
+                "uuid": "001_16022024_0000000001",
+                "created_at": "2024-02-16T13:30:05.000000Z",
+                "updated_at": "2024-08-02T12:39:56.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 1,
+                "date_attribution": "2024-02-16 14:31:34",
+                "categorie_socioprof_id": 13,
+                "soit_transmis_id": null,
+                "categorie_professionnelle": {
+                    "id": 13,
+                    "categorie": "Employes Commerciaux"
+                },
+                "employeur": {
+                    "id": 3,
+                    "nom_employeur": "Autres",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 11,
+                    "lib_quartier": "Centre Sportif",
+                    "arrondissements_id": 21,
+                    "code_quartier": "Le quartier 01",
+                    "created_at": "2024-02-16T12:17:28.000000Z",
+                    "updated_at": "2024-02-16T12:17:28.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 21,
+                        "lib_arrondissement": "MAKELEKELE",
+                        "departements_id": 1,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 1,
+                            "lib_departement": "BRAZZAVILLE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "nom": "Balde",
+        "prenom": "Mamadou Alimou",
+        "sexe": "Masculin",
+        "date_naissance": "1983-01-01",
+        "lieu_naissance": "Lab\u00e9",
+        "nationalites_id": 94,
+        "nom_pere": "Bald\u00e9",
+        "prenom_pere": "mamadou saliou",
+        "nom_mere": "Bald\u00e9",
+        "prenom_mere": "isabelle",
+        "unique_string": "BALDEMAMADOU ALIMOUMASCULIN1983-01-0194",
+        "users_id": null,
+        "created_at": "2024-02-17T08:30:59.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 3,
+                "impetrant_id": 3,
+                "pays_id": 94,
+                "created_at": "2025-07-25T14:20:50.000000Z",
+                "updated_at": "2025-07-25T14:20:50.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 3,
+                "impetrants_id": 3,
+                "numero_ancien_document": null,
+                "photo": "demandes\/DWHO7ka0wjJPMgKx55xkmdxCwZ555YIhOxTOR3Cj.jpg",
+                "numero_document": "000172077",
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": "2023-11-08",
+                "date_expiration": "2024-11-07",
+                "quartiers_id": 51,
+                "avenue_rue": ".",
+                "numero_adresse": ".",
+                "telephone": "066787666",
+                "email": ".",
+                "profession": "Marchand",
+                "employeur_id": 3,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2023-11-08",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": "IMPRESSION",
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": null,
+                "approval_date": "2024-02-17 09:31:28",
+                "uuid": "001_17022024_0000000001",
+                "created_at": "2024-02-17T08:30:59.000000Z",
+                "updated_at": "2024-09-26T12:15:06.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 1,
+                "date_attribution": "2024-02-17 09:31:51",
+                "categorie_socioprof_id": 21,
+                "soit_transmis_id": null,
+                "categorie_professionnelle": {
+                    "id": 21,
+                    "categorie": "Autres"
+                },
+                "employeur": {
+                    "id": 3,
+                    "nom_employeur": "Autres",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 51,
+                    "lib_quartier": "Nkombo",
+                    "arrondissements_id": 29,
+                    "code_quartier": "Le quartier 904",
+                    "created_at": "2024-02-16T12:17:28.000000Z",
+                    "updated_at": "2024-02-16T12:17:28.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 29,
+                        "lib_arrondissement": "DJIRI",
+                        "departements_id": 1,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 1,
+                            "lib_departement": "BRAZZAVILLE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "nom": "DJAHADINI",
+        "prenom": "HICHAM SAKINE",
+        "sexe": "Masculin",
+        "date_naissance": "1975-01-01",
+        "lieu_naissance": "BATHA",
+        "nationalites_id": 44,
+        "nom_pere": "DJAHADINE",
+        "prenom_pere": ".",
+        "nom_mere": ".",
+        "prenom_mere": ".",
+        "unique_string": "DJAHADINIHICHAM SAKINEMASCULIN1975-01-0144",
+        "users_id": null,
+        "created_at": "2024-02-17T08:41:27.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 4,
+                "impetrant_id": 4,
+                "pays_id": 44,
+                "created_at": "2025-07-25T14:20:50.000000Z",
+                "updated_at": "2025-07-25T14:20:50.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 4,
+                "impetrants_id": 4,
+                "numero_ancien_document": null,
+                "photo": "demandes\/W1oMEymz3u2vFv5VgKFNYGdE6g7QJKaSASrxf0Mg.jpg",
+                "numero_document": "000172976",
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": "2023-12-01",
+                "date_expiration": "2024-11-30",
+                "quartiers_id": 36,
+                "avenue_rue": "Lenine",
+                "numero_adresse": "83",
+                "telephone": "068835873",
+                "email": "s@g.com",
+                "profession": "Employ\u00e9 de commerce",
+                "employeur_id": 3,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2024-02-17",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": "REPRISE",
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": "exporte",
+                "approval_date": null,
+                "uuid": "001_17022024_0000000001",
+                "created_at": "2024-02-17T08:41:27.000000Z",
+                "updated_at": "2024-02-19T10:23:06.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 1,
+                "date_attribution": "2024-02-17 09:42:42",
+                "categorie_socioprof_id": 21,
+                "soit_transmis_id": null,
+                "categorie_professionnelle": {
+                    "id": 21,
+                    "categorie": "Autres"
+                },
+                "employeur": {
+                    "id": 3,
+                    "nom_employeur": "Autres",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 36,
+                    "lib_quartier": "March\u00e9 10 F",
+                    "arrondissements_id": 24,
+                    "code_quartier": "Le quartier 46",
+                    "created_at": "2024-02-16T12:17:28.000000Z",
+                    "updated_at": "2024-02-16T12:17:28.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 24,
+                        "lib_arrondissement": "MOUNGALI",
+                        "departements_id": 1,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 1,
+                            "lib_departement": "BRAZZAVILLE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    },
+    {
+        "id": 5,
+        "nom": "AMIN",
+        "prenom": "Mohamad",
+        "sexe": "Masculin",
+        "date_naissance": "1967-05-16",
+        "lieu_naissance": "Zouk mkayel",
+        "nationalites_id": 125,
+        "nom_pere": ".",
+        "prenom_pere": ".",
+        "nom_mere": ".",
+        "prenom_mere": ".",
+        "unique_string": "AMINMOHAMADMASCULIN1967-05-16125",
+        "users_id": null,
+        "created_at": "2024-02-17T08:55:41.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 5,
+                "impetrant_id": 5,
+                "pays_id": 125,
+                "created_at": "2025-07-25T14:20:50.000000Z",
+                "updated_at": "2025-07-25T14:20:50.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 5,
+                "impetrants_id": 5,
+                "numero_ancien_document": null,
+                "photo": "demandes\/CYfptJybfWi6yVri5pAvtbI835UlD8DF9auSQqLE.jpg",
+                "numero_document": "000173888",
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": "2023-10-24",
+                "date_expiration": "2024-10-23",
+                "quartiers_id": 55,
+                "avenue_rue": "...",
+                "numero_adresse": ".",
+                "telephone": "067746881",
+                "email": ".",
+                "profession": "Commer\u00e7ant",
+                "employeur_id": 3,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2023-10-24",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": "REPRISE",
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": "exporte",
+                "approval_date": null,
+                "uuid": "001_17022024_0000000001",
+                "created_at": "2024-02-17T08:55:41.000000Z",
+                "updated_at": "2025-05-08T03:11:50.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 1,
+                "date_attribution": "2024-02-17 09:56:37",
+                "categorie_socioprof_id": 21,
+                "soit_transmis_id": 2588,
+                "categorie_professionnelle": {
+                    "id": 21,
+                    "categorie": "Autres"
+                },
+                "employeur": {
+                    "id": 3,
+                    "nom_employeur": "Autres",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 55,
+                    "lib_quartier": "Autres",
+                    "arrondissements_id": 6,
+                    "code_quartier": null,
+                    "created_at": "2024-02-16T12:35:08.000000Z",
+                    "updated_at": "2024-02-16T12:35:08.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 6,
+                        "lib_arrondissement": "LUMUMBA",
+                        "departements_id": 2,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 2,
+                            "lib_departement": "POINTE-NOIRE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    },
+    {
+        "id": 6,
+        "nom": "Sylla",
+        "prenom": "Madjou",
+        "sexe": "Masculin",
+        "date_naissance": "1991-12-07",
+        "lieu_naissance": "TOUKOROB",
+        "nationalites_id": 138,
+        "nom_pere": "Sylla",
+        "prenom_pere": "Mahamadou",
+        "nom_mere": "Sanogo",
+        "prenom_mere": "Astan",
+        "unique_string": "SYLLAMADJOUMASCULIN1991-12-07138",
+        "users_id": null,
+        "created_at": "2024-02-17T09:05:01.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 6,
+                "impetrant_id": 6,
+                "pays_id": 138,
+                "created_at": "2025-07-25T14:20:50.000000Z",
+                "updated_at": "2025-07-25T14:20:50.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 6,
+                "impetrants_id": 6,
+                "numero_ancien_document": null,
+                "photo": "demandes\/hfcJWdxsVm9f06QNLYj7keCs0LJ90tYXwKTVc3cv.jpg",
+                "numero_document": "000173727",
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": "2023-10-30",
+                "date_expiration": "2024-10-29",
+                "quartiers_id": 57,
+                "avenue_rue": "Zande",
+                "numero_adresse": "58",
+                "telephone": "055105555",
+                "email": "s@g.com",
+                "profession": "Employ\u00e9 de commerce",
+                "employeur_id": 3,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2023-10-30",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": "REPRISE",
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": "exporte",
+                "approval_date": null,
+                "uuid": "001_17022024_0000000001",
+                "created_at": "2024-02-17T09:05:01.000000Z",
+                "updated_at": "2024-02-19T10:23:06.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 1,
+                "date_attribution": "2024-02-17 11:21:09",
+                "categorie_socioprof_id": 21,
+                "soit_transmis_id": null,
+                "categorie_professionnelle": {
+                    "id": 21,
+                    "categorie": "Autres"
+                },
+                "employeur": {
+                    "id": 3,
+                    "nom_employeur": "Autres",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 57,
+                    "lib_quartier": "Centre-Ville",
+                    "arrondissements_id": 23,
+                    "code_quartier": null,
+                    "created_at": "2024-02-16T12:41:37.000000Z",
+                    "updated_at": "2024-02-16T12:41:37.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 23,
+                        "lib_arrondissement": "POTO-POTO",
+                        "departements_id": 1,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 1,
+                            "lib_departement": "BRAZZAVILLE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    },
+    {
+        "id": 7,
+        "nom": "Sylla",
+        "prenom": "Madjou",
+        "sexe": "Masculin",
+        "date_naissance": "1991-12-07",
+        "lieu_naissance": "TOUKOROB",
+        "nationalites_id": 138,
+        "nom_pere": "Sylla",
+        "prenom_pere": "Mahamadou",
+        "nom_mere": "Sanogo",
+        "prenom_mere": "Astan",
+        "unique_string": "SYLLAMADJOUMASCULIN1991-12-07138",
+        "users_id": null,
+        "created_at": "2024-02-17T09:44:14.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 7,
+                "impetrant_id": 7,
+                "pays_id": 138,
+                "created_at": "2025-07-25T14:20:50.000000Z",
+                "updated_at": "2025-07-25T14:20:50.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 7,
+                "impetrants_id": 7,
+                "numero_ancien_document": null,
+                "photo": "demandes\/mEfyXhW002XpL8cxqwxqcumBBDHiKJYkYkIMSHiw.jpg",
+                "numero_document": "000173727",
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": "2023-10-30",
+                "date_expiration": "2024-10-29",
+                "quartiers_id": 60,
+                "avenue_rue": "Zande",
+                "numero_adresse": "58",
+                "telephone": "055105555",
+                "email": "s@g.com",
+                "profession": "Employ\u00e9 de commerce",
+                "employeur_id": 3,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2023-10-30",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": "REPRISE",
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": "exporte",
+                "approval_date": null,
+                "uuid": "001_17022024_0000000001",
+                "created_at": "2024-02-17T09:44:14.000000Z",
+                "updated_at": "2025-05-08T03:11:39.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 1,
+                "date_attribution": "2024-02-17 11:21:35",
+                "categorie_socioprof_id": 21,
+                "soit_transmis_id": 2588,
+                "categorie_professionnelle": {
+                    "id": 21,
+                    "categorie": "Autres"
+                },
+                "employeur": {
+                    "id": 3,
+                    "nom_employeur": "Autres",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 60,
+                    "lib_quartier": "Poto-Poto 1",
+                    "arrondissements_id": 23,
+                    "code_quartier": null,
+                    "created_at": "2024-02-17T09:05:36.000000Z",
+                    "updated_at": "2024-02-17T09:05:36.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 23,
+                        "lib_arrondissement": "POTO-POTO",
+                        "departements_id": 1,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 1,
+                            "lib_departement": "BRAZZAVILLE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    },
+    {
+        "id": 8,
+        "nom": "Coulibaly",
+        "prenom": "sadio",
+        "sexe": "Masculin",
+        "date_naissance": "1996-12-21",
+        "lieu_naissance": "nara",
+        "nationalites_id": 138,
+        "nom_pere": "Coulibaly",
+        "prenom_pere": "lassana",
+        "nom_mere": "diarra",
+        "prenom_mere": "koumba",
+        "unique_string": "COULIBALYSADIOMASCULIN1996-12-21138",
+        "users_id": null,
+        "created_at": "2024-02-17T10:12:36.000000Z",
+        "updated_at": "2024-03-18T09:47:17.000000Z",
+        "deleted_at": null,
+        "nationalites": [
+            {
+                "id": 8,
+                "impetrant_id": 8,
+                "pays_id": 138,
+                "created_at": "2025-07-25T14:20:51.000000Z",
+                "updated_at": "2025-07-25T14:20:51.000000Z"
+            }
+        ],
+        "demandes": [
+            {
+                "id": 8,
+                "impetrants_id": 8,
+                "numero_ancien_document": null,
+                "photo": "demandes\/JUDY3sUNKf3ZUChCMKSnQRWwV5udZu11EQeTWcil.jpg",
+                "numero_document": null,
+                "validite": "1",
+                "etat_civil": "C\u00e9libataire",
+                "date_emission": null,
+                "date_expiration": null,
+                "quartiers_id": 62,
+                "avenue_rue": "Makoua",
+                "numero_adresse": "110",
+                "telephone": "0000",
+                "email": "s@g.com",
+                "profession": "Employ\u00e9 de commerce",
+                "employeur_id": 3,
+                "type_demande": "Carte de r\u00e9sident temporaire",
+                "date_demande": "2023-10-11",
+                "statut_demande": "Approuv\u00e9e",
+                "date_validiter_fiche": null,
+                "tag_demande": "REPRISE",
+                "created_by": 1,
+                "approved_by": null,
+                "export_json": "exporte",
+                "approval_date": null,
+                "uuid": "001_17022024_0000000001",
+                "created_at": "2024-02-17T10:12:36.000000Z",
+                "updated_at": "2024-02-19T10:23:06.000000Z",
+                "deleted_at": null,
+                "nom_conjoint": null,
+                "attribue": 0,
+                "date_attribution": null,
+                "categorie_socioprof_id": 21,
+                "soit_transmis_id": null,
+                "categorie_professionnelle": {
+                    "id": 21,
+                    "categorie": "Autres"
+                },
+                "employeur": {
+                    "id": 3,
+                    "nom_employeur": "Autres",
+                    "type": "Personne morale"
+                },
+                "quartier": {
+                    "id": 62,
+                    "lib_quartier": "Poto-Poto 3",
+                    "arrondissements_id": 23,
+                    "code_quartier": null,
+                    "created_at": "2024-02-17T09:05:54.000000Z",
+                    "updated_at": "2024-02-17T09:05:54.000000Z",
+                    "deleted_at": null,
+                    "arrondissement": {
+                        "id": 23,
+                        "lib_arrondissement": "POTO-POTO",
+                        "departements_id": 1,
+                        "created_at": "2024-02-16T12:17:28.000000Z",
+                        "updated_at": "2024-02-16T12:17:28.000000Z",
+                        "deleted_at": null,
+                        "departement": {
+                            "id": 1,
+                            "lib_departement": "BRAZZAVILLE",
+                            "created_at": "2024-02-16T12:17:28.000000Z",
+                            "updated_at": "2024-02-16T12:17:28.000000Z"
+                        }
+                    }
+                },
+                "contentieux": []
+            }
+        ]
+    }
+]

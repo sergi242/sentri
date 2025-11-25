@@ -22,25 +22,34 @@
                                 <div class="card-body">
                                     <form class="form form-horizontal" method="POST" action="{{route('flux.update',$flux->id)}}">
                                         @csrf
+                                        @method('PUT')
                                         <div class="form-body">
                                             <h4 class="form-section"><i class="ft-user"></i> Information du flux</h4>
 
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="departements_id">Département *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select id="departements_id" class="form-control @error('departements_id') is-invalid @enderror"  name="departements_id" required>
+                                                        <option value="{{$flux->frontiere?->departement?->id}}" selected>{{$flux->frontiere?->departement?->lib_departement ?? "Aucun département trouvé"}}</option>
+                                                        @forelse ($departements as $departement)
+                                                            <option value="{{$departement->id}}">{{ $departement->lib_departement }}</option>
+                                                        @empty
+                                                        @endforelse
+                                                    </select>
+                                                    @error('departements_id')
+                                                        <div class="invalid-feedback">
+                                                                {{$message}}
+                                                        </div>
+                                                    @enderror
+                                                </div>
+                                            </div>
                                             <div class="form-group row">
                                                 <label class="col-md-3 label-control" for="frontieres_id">Frontière *</label>
                                                 <div class="col-md-9 mx-auto">
                                                     <select id="frontieres_id" class="form-control @error('frontieres_id') is-invalid @enderror"  name="frontieres_id" required>
                                                         <option value="">Selectionner</option>
-                                                        @forelse ($frontieres as $frontiere)
-                                                            <option value="{{$frontiere->id}}" {{ $frontiere->id == $flux->frontieres_id ? "selected":"" }}>{{ $frontiere->lib_frontiere }}</option>
-                                                        @empty
-
-                                                        @endforelse
+                                                        <option value="{{$flux->frontieres_id}}" selected>{{$flux->frontiere?->lib_frontiere ?? "Aucune frontière trouvée"}}</option>
                                                     </select>
-                                                    @error('frontieres_id')
-                                                        <div class="invalid-feedback">
-                                                                {{$message}}
-                                                        </div>
-                                                    @enderror
                                                 </div>
                                             </div>
                                             <div class="form-group row">
@@ -121,7 +130,23 @@
 <script src="{{asset('res/app-assets/vendors/js/forms/select/selectivity-full.min.js')}}"></script>
 <script>
     $(function(){
-
+        $("#departements_id").on("change",function(){
+            var id = $(this).val();
+            if(id != ""){
+                getFrontieresByDepartement(id);
+            }
+            return false;
+        });
     });
+
+    function getFrontieresByDepartement(id){
+        var route = "{{route('flux.getFrontieresByDepartement', ':id')}}";
+        route = route.replace(":id",id);
+        $.get(route,function(response){
+            $("#frontieres_id").empty().append(response);
+        }).fail(function(){
+            $("#frontieres_id").empty().append("<option value=''>Aucune frontière trouvée pour ce département</option>");
+        });
+    }
 </script>
 @endsection

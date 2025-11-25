@@ -194,6 +194,18 @@ class DemandeController extends Controller
         return view("admin.demandes.newcrt",compact("pays","departements","etatsCivils","validites","pieces","categories","employeurs"));
     }
 
+    public function diplomate()
+    {
+        $pays = Pays::all();
+        $departements = Departement::all();
+        $etatsCivils = ['Célibataire','Marié(e)','Divorcé(e)','Veuf(-ve)'];
+        $validites = ["1","3","5"];
+        $employeurs = Employeur::all();
+        $pieces = Justificatif::all();
+        $categories = CategorieSocioProfessionnelle::all();
+        return view("admin.demandes.diplomate",compact("pays","departements","etatsCivils","validites","pieces","categories","employeurs"));
+    }
+
     public function newdocument(){
         return view("admin.demandes.new");
     }
@@ -1169,4 +1181,6 @@ class DemandeController extends Controller
         })->orderBy("nom","asc")->paginate(20);
         return view("admin.impetrants.procheexpiration.index",compact("demandes"));
     }
+
+
 }

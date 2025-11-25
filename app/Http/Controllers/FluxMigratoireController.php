@@ -21,8 +21,14 @@ class FluxMigratoireController extends Controller
 
     public function create(){
         $frontieres = FrontiereCongo::all();
+        $departements = Departement::all();
         $pays = Pays::all();
-        return view("admin.flux.create",compact("frontieres","pays"));
+        return view("admin.flux.create",compact("frontieres","departements","pays"));
+    }
+
+    public function getFrontieresByDepartement($id){
+        $frontieres = FrontiereCongo::where("departements_id",$id)->get();
+        return response()->json($frontieres);
     }
 
     public function store(Request $request){
@@ -55,12 +61,13 @@ class FluxMigratoireController extends Controller
     public function edit($id){
         $flux = FluxMigratoire::find($id);
         $frontieres = FrontiereCongo::all();
+        $departements = Departement::all();
         $pays = Pays::all();
         if($flux == null){
             toastr()->error("Impossible de traiter cette requête");
             return back();
         }
-        return view("admin.flux.edit",compact("flux","frontieres","pays"));
+        return view("admin.flux.edit",compact("flux","frontieres","departements","pays"));
     }
 
     public function update(Request $request, $id){
