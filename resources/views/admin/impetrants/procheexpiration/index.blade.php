@@ -61,7 +61,7 @@
                                                     <td>{{$demande->sexe}}</td>
                                                     <td>{{$demande->pays?->lib_pays}}</td>
                                                     <td>{{$demande->demandes->count()}}</td>
-                                                    <td>{{$demande->demandes->last()?->date_expiration}}</td>
+                                                    <td style="background-color: {{ \Carbon\Carbon::parse($demande->demandes->last()?->date_expiration)->diffInMonths() <= 2 ? "red" : "green" }}; color: white; padding: 5px; border-radius: 5px;">{{ \Carbon\Carbon::parse($demande->demandes->last()?->date_expiration)->diffForHumans() }}</td>
 
                                                     <td>
                                                         <div class="btn-group btn-block">

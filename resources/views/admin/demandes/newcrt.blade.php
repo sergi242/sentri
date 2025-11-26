@@ -198,7 +198,7 @@
                                                             @enderror
                                                         </div>
                                                     </div>
-                                                    <div class="form-group row">
+                                                    <div class="form-group row attributed">
                                                         <label class="col-md-4" for="numero_document">Numéro attribué</label>
                                                         <div class="col-md-8 mx-auto">
                                                             <input type="text" name="numero_document" id="numero_document" placeholder="Numéro du document" class="form-control @error('numero_document') is-invalid @enderror" value="{{old("numero_document")}}">
@@ -209,7 +209,7 @@
                                                             @enderror
                                                         </div>
                                                     </div>
-                                                    <div class="form-group row">
+                                                    <div class="form-group row attributed">
                                                         <label class="col-md-4" for="date_attribution">Date d'émission</label>
                                                         <div class="col-md-8 mx-auto">
                                                             <input type="date" name="date_attribution" id="date_attribution" placeholder="Date d'émission" class="form-control @error('date_attribution') is-invalid @enderror" value="{{old("date_attribution")}}">
@@ -582,114 +582,115 @@
 
 @endsection
 @section('scripts')
-<script src="{{asset('res/app-assets/vendors/js/forms/select/select2.full.min.js')}}"></script>
-<script src="{{asset('res/app-assets/js/scripts/forms/select/form-select2.min.js')}}"></script>
-<script>
-    $(function(){
-        $("#departements_id").on("change",function(){
-            var id = $(this).val();
-            if(id != ""){
-                arrondissements(id,"#arrondissements_id");
-            }
-            return false;
-        });
-
-        $("#arrondissements_id").on("change",function(){
-            var id = $(this).val();
-            if(id != ""){
-                quartiers(id,"#quartiers_id");
-            }
-            return false;
-        });
-
-        $(".nc").hide();
-
-        $("#etat_civil").on("change",function(){
-            var me = $(this).val();
-            var sexe = $("#sexe").val();
-            if(me =="Marié(e)" && sexe =="Féminin"){
-                $(".nc").fadeIn(500);
-            }else{
-                $(".nc").fadeOut(500);
-                $("#nom_conjoint").val("");
-            }
-        });
-        // Le nom du père
-        $('#nom').on('input', function() {
-            $('#nom_pere').val($(this).val());
-        });
-
-        $(".attributed").hide();
-        $("#tag_demande").on("change",function(){
-            var tag = $(this).val();
-            if(tag == "REPRISE"){
-                $(".attributed").slideDown(500);
-            }else{
-                $("#numero_document").val("");
-                $(".attributed").slideUp(500);
-            }
-        });
-
-        //date delivrance
-        $("#date_emission_passeport").on("change",function() {
-            getDateExpiration('#date_emission_passeport','#date_expiration_passeport');
-        });
-        $("#date_emission_passeport").on("keyup",function() {
-            getDateExpiration('#date_emission_passeport','#date_expiration_passeport');
-        });
-
-        $("#nom").on("input", function() {
-        $(this).val(function(_, val) {
-            return val.toUpperCase();
-        });
-    });
-    });
-
-    function arrondissements(id,div){
-        var route = "{{route("departements.arrondissements",'id')}}";
-        var out = "<option value=''>Selectionner</option>"
-        route = route.replace("id",id);
-        $.get(route,function(data){
-            if(data.length > 0){
-                for(var i=0; i < data.length; i++){
-                    out += "<option value="+data[i].id+">"+data[i].lib_arrondissement+"</option>";
+    <script src="{{ asset('res/app-assets/vendors/js/forms/select/select2.full.min.js') }}"></script>
+    <script src="{{ asset('res/app-assets/js/scripts/forms/select/form-select2.min.js') }}"></script>
+    <script>
+        $(function () {
+            $('#departements_id').on('change', function () {
+                var id = $(this).val();
+                if (id !== '') {
+                    arrondissements(id, '#arrondissements_id');
                 }
-                $(div).empty().append(out);
-            }
-        });
-    }
+                return false;
+            });
 
-    function quartiers(id,div){
-        var route = "{{route("arrondissements.quartiers",'id')}}";
-        var out = "<option value=''>Selectionner</option>"
-        route = route.replace("id",id);
-        $.get(route,function(data){
-            if(data.length > 0){
-                for(var i=0; i < data.length; i++){
-                    out += "<option value="+data[i].id+">"+data[i].lib_quartier+"</option>";
+            $('#arrondissements_id').on('change', function () {
+                var id = $(this).val();
+                if (id !== '') {
+                    quartiers(id, '#quartiers_id');
                 }
-                $(div).empty().append(out);
-            }
+                return false;
+            });
+
+            // Conjoint, caché par défaut
+            $('.nc').hide();
+
+            $('#etat_civil').on('change', function () {
+                var me = $(this).val();
+                var sexe = $('#sexe').val();
+                if (me === 'Marié(e)' && sexe === 'Féminin') {
+                    $('.nc').fadeIn(500);
+                } else {
+                    $('.nc').fadeOut(500);
+                    $('#nom_conjoint').val('');
+                }
+            });
+
+            // Recopie du nom vers nom du père (si souhaité)
+            $('#nom').on('input', function () {
+                $('#nom_pere').val($(this).val());
+            });
+
+            // Champs attribués (Numéro / Date émission), cachés par défaut
+            $('.attributed').hide();
+            $('#tag_demande').on('change', function () {
+                var tag = $(this).val();
+                if (tag === 'REPRISE') {
+                    $('.attributed').slideDown(500);
+                } else {
+                    $('#numero_document').val('');
+                    $('#date_attribution').val('');
+                    $('.attributed').slideUp(500);
+                }
+            });
+
+            // Calcul automatique de la date d'expiration du passeport
+            $('#date_emission_passeport').on('change keyup', function () {
+                getDateExpiration('#date_emission_passeport', '#date_expiration_passeport');
+            });
+
+            // Nom du diplomate toujours en majuscules
+            $('#nom').on('input', function () {
+                $(this).val(function (_, val) {
+                    return val.toUpperCase();
+                });
+            });
         });
-    }
 
-    function getDateExpiration(fd,sd){
-        // Retrieve the start date from input and number of years to add
-        var startDate = new Date($(fd).val());
-        var yearsToAdd = 5; // Change this to the number of years you want to add
+        function arrondissements(id, div) {
+            var route = "{{ route('departements.arrondissements', 'id') }}";
+            var out = "<option value=''>Sélectionner</option>";
+            route = route.replace('id', id);
+            $.get(route, function (data) {
+                if (data.length > 0) {
+                    for (var i = 0; i < data.length; i++) {
+                        out += "<option value='" + data[i].id + "'>" + data[i].lib_arrondissement + "</option>";
+                    }
+                    $(div).empty().append(out);
+                }
+            });
+        }
 
-        // Add the years to the start date
-        startDate.setFullYear(startDate.getFullYear() + yearsToAdd);
+        function quartiers(id, div) {
+            var route = "{{ route('arrondissements.quartiers', 'id') }}";
+            var out = "<option value=''>Sélectionner</option>";
+            route = route.replace('id', id);
+            $.get(route, function (data) {
+                if (data.length > 0) {
+                    for (var i = 0; i < data.length; i++) {
+                        out += "<option value='" + data[i].id + "'>" + data[i].lib_quartier + "</option>";
+                    }
+                    $(div).empty().append(out);
+                }
+            });
+        }
 
-        // Format the new date to a readable format, e.g., "2024-01-01"
-        var dd = String(startDate.getDate() - 1).padStart(2, '0');
-        var mm = String(startDate.getMonth() + 1).padStart(2, '0'); //January is 0!
-        var yyyy = startDate.getFullYear();
+        function getDateExpiration(fd, sd) {
+            var startDate = new Date($(fd).val());
+            var yearsToAdd = 5; // Nombre d'années de validité
 
-        var resultDate = yyyy + '-' + mm + '-' + dd;
+            if (isNaN(startDate.getTime())) {
+                return;
+            }
 
-        // Set the result date to the output field
+            startDate.setFullYear(startDate.getFullYear() + yearsToAdd);
+
+            var dd = String(startDate.getDate() - 1).padStart(2, '0');
+            var mm = String(startDate.getMonth() + 1).padStart(2, '0');
+            var yyyy = startDate.getFullYear();
+
+            var resultDate = yyyy + '-' + mm + '-' + dd;
             $(sd).val(resultDate);
-    }
-</script>
+        }
+    </script>
 @endsection

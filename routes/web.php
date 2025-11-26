@@ -125,6 +125,7 @@ Route::middleware("auth")->group(function(){
             Route::get("{id}/take-photo","takephoto")->name("demandes.takephoto");
             Route::get("{id}/information/document","remplirformation")->name("demandes.remplirformation")->middleware("can:demandes.grant");
             Route::get("{id}/similarites","similarities")->name("demandes.similarities")->middleware("can:demandes.view.similar");
+            Route::get("compare-similarity","compareSimilarity")->name("demandes.compare.similarity");
 
             Route::post("store","store")->name("demandes.store")->middleware("can:demandes.create");
             Route::post("{id}/photo-store","storePhoto")->name("storePhoto.index");

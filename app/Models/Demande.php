@@ -101,4 +101,8 @@ class Demande extends Model
     {
         return $this->hasMany(FicheDemande::class, 'demande_id', 'id');
     }
+
+    public function adresseComplete(){
+        return "Quartier : ".$this->quartier?->libelle_quartier.", Avenue : ".$this->avenue_rue.", Numéro : ".$this->numero_adresse.", Arrondissement : ".$this->quartier?->arrondissement?->libelle_arrondissement;
+    }
 }

@@ -1182,5 +1182,15 @@ class DemandeController extends Controller
         return view("admin.impetrants.procheexpiration.index",compact("demandes"));
     }
 
-
+    public function compareSimilarity(){
+        $base = request()->get("base");
+        $similar = request()->get("similar");
+        $base = Demande::find($base);
+        $similar = Demande::find($similar);
+        if($base == null || $similar == null){
+            toastr()->error("Impossible de traiter cette requête");
+            return back();
+        }
+        return view("admin.demandes.comparaison-similarity",compact("base","similar"));
+    }
 }

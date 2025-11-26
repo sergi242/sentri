@@ -127,7 +127,7 @@
 
     <!-- Signataire -->
     <div style="margin-top: 80px; text-align: right; font-size: 11pt;">
-        <u>{{ ucfirst($signataire->grade->grade) }} <strong>{{ $signataire->nom }} {{ $signataire->prenom }}</strong></u>
+        <u>{{ ucfirst($signataire?->grade?->grade ?? 'Non défini') }} <strong>{{ $signataire?->nom }} {{ $signataire?->prenom }}</strong></u>
     </div>
     <style>
         #table {

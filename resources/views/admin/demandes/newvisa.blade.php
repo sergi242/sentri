@@ -174,7 +174,7 @@
                                                             @enderror
                                                         </div>
                                                     </div>
-                                                    <div class="form-group row">
+                                                    <div class="form-group row attributed">
                                                         <label class="col-md-4" for="numero_document">Numéro attribué</label>
                                                         <div class="col-md-8 mx-auto">
                                                             <input type="text" name="numero_document" id="numero_document" placeholder="Numéro du document" class="form-control @error('numero_document') is-invalid @enderror" value="{{old("numero_document")}}">
@@ -185,7 +185,7 @@
                                                             @enderror
                                                         </div>
                                                     </div>
-                                                    <div class="form-group row">
+                                                    <div class="form-group row attributed">
                                                         <label class="col-md-4" for="date_attribution">Date d'émission</label>
                                                         <div class="col-md-8 mx-auto">
                                                             <input type="date" name="date_attribution" id="date_attribution" placeholder="Date d'émission" class="form-control @error('date_attribution') is-invalid @enderror" value="{{old("date_attribution")}}">

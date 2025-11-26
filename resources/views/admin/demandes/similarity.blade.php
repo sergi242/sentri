@@ -1,6 +1,6 @@
 @extends("admin.layouts.app")
 @section("title")
-    Approbation
+    Liste des similarités
 @endsection
 @section("content")
 <div class="app-content content">
@@ -39,7 +39,7 @@
                             <div class="text-center">
                                 {{-- <a href="#" class="btn btn-social-icon mr-1 mb-1 btn-outline-facebook"><span class="la la-facebook"></span></a> --}}
                                 <p>Taux de similarité :  <strong>{{ ceil(TechnoDev::tauxSimilarity($item->unique_string,$demande->impetrant?->unique_string)) }} %</strong></p>
-                                <a href="#" class="btn btn-social-icon mr-1 mb-1 btn-outline-twitter"><span class="la la-eye"></span></a>
+                                <a href="{{ route("demandes.compare.similarity",["base" => $demande->id,"similar" => $item->id]) }}" class="btn btn-social-icon mr-1 mb-1 btn-outline-twitter"><span class="la la-eye"></span></a>
                                 {{-- <a href="#" class="btn btn-social-icon mb-1 btn-outline-linkedin"><span class="la la-linkedin font-medium-4"></span></a> --}}
                             </div>
                         </div>

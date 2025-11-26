@@ -115,7 +115,7 @@
                                         </div>
                                         <div class="col-md-10 text-center">
                                             <h1>Demande de délivrance</h1>
-                                            <h1>de carte de résident – Corps diplomatique</h1>
+                                            <h1>de carte de résident et Visa – Corps diplomatique</h1>
                                         </div>
                                         <div class="col-md-1 text-center">
                                             <img src="{{ asset('img/armoi_2.png') }}" class="diplomatic-logo" alt="Armoiries">

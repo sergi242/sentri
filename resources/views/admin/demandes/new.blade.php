@@ -14,15 +14,19 @@ Liste des demandes
         <div class="content-body">
             <!-- Revenue, Hit Rate & Deals -->
             <div class="row">
-                <div class="col-2"></div>
+                
                 <div class="col-3 animated fadeIn">
                     <h3 class="text-center text-white bg-blue">Nouvelle demande CRT</h3>
                     <a href="{{ route("demandes.newcrt") }}" class="demande"><img src=" {{ asset("img/models/ccrt.jpg") }}" alt="" class="img-thumbnail"></a>
                 </div>
-                <div class="col-2"></div>
+                
                 <div class="col-3 animated fadeIn">
                     <h3 class="text-center text-white bg-blue">Nouvelle demande Visa</h3>
                     <a href="{{ route("demandes.newvisa") }}" class="demande"><img src=" {{ asset("img/models/cvisa.jpg") }}" alt="" class="img-thumbnail"></a>
+                </div>
+                <div class="col-3 animated fadeIn">
+                    <h3 class="text-center text-white bg-blue">Demande diplomatique</h3>
+                    <a href="{{ route("demandes.newdiplomate") }}" class="demande"><img src=" {{ asset("img/models/cvisa.jpg") }}" alt="" class="img-thumbnail"></a>
                 </div>
             </div>
             <hr>
