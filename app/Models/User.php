@@ -77,6 +77,9 @@ class User extends Authenticatable
         return $this->hasMany(SoitTransmis::class, 'created_by'); // Adapte si nécessaire
     }
 
-
+    public function fluxMigratoires()
+    {
+        return $this->hasMany(FluxMigratoire::class, 'users_id', 'id');
+    }
 
 }

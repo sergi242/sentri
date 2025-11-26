@@ -80,23 +80,32 @@
             <thead>
                 <!-- Première ligne d'en-tête -->
                 <tr>
-                    <th class="th" style="width: 30%;">Nom Complet</th>
-                    <th class="th" style="width: 20%;">Grade</th>
-                    <th class="th" colspan="3" style="width: 30%;">Demandes Réalisées</th> <!-- Fusionne les colonnes -->
+                    <th class="th" style="width: 27%;">Nom Complet</th>
+                    <th class="th" style="width: 17%;">Grade</th>
+                    <th class="th" colspan="3" style="width: 27%;">Demandes Réalisées</th> <!-- Fusionne les colonnes -->
                     <th class="th" style="width: 10%;">Soit Transmis</th>
+                    <th class="th" style="width: 9%;">Flux Migratoire</th>
                 </tr>
                 <!-- Deuxième ligne d'en-tête -->
                 <tr>
-                    <th class="th" style="width: 30%;"></th>
-                    <th class="th" style="width: 20%;"></th>
-                    <th class="th" style="width: 10%;">VISA</th>
-                    <th class="th" style="width: 10%;">CRT</th>
-                    <th class="th" style="width: 10%;">TOTAL</th>
+                    <th class="th" style="width: 27%;"></th>
+                    <th class="th" style="width: 17%;"></th>
+                    <th class="th" style="width: 9%;">VISA</th>
+                    <th class="th" style="width: 9%;">CRT</th>
+                    <th class="th" style="width: 9%;">TOTAL</th>
                     <th class="th" style="width: 10%;"></th>
+                    <th class="th" style="width: 9%;"></th>
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $totalFluxMigratoire = 0;
+                @endphp
+
                 @foreach ($users as $user)
+                @php
+                    $totalFluxMigratoire += $user->fluxMigratoires->count();
+                @endphp
                 <tr>
                     <td class="td">{{ $user->getNomPrenom() }}</td>
                     <td class="td">{{ $user->grade?->grade ?? 'Non défini' }}</td>
@@ -104,6 +113,7 @@
                     <td class="td">{{ $user->demandes_crt_count }}</td>
                     <td class="td">{{ $user->demandes_count }}</td> <!-- Total des demandes -->
                     <td class="td">{{ $user->soit_transmis_count }}</td>
+                    <td class="td">{{ $user->fluxMigratoires->count() }}</td>
                 </tr>
                 @endforeach
                 <tr id="total_cel" class="total-row">
@@ -113,6 +123,7 @@
                     <td class="td"><strong>{{ $users->sum('demandes_crt_count') }}</strong></td>
                     <td class="td"><strong>{{ $users->sum('demandes_count') }}</strong></td>
                     <td class="td"><strong>{{ $users->sum('soit_transmis_count') }}</strong></td>
+                    <td class="td"><strong>{{ $totalFluxMigratoire }}</strong></td>
                 </tr>
             </tbody>
         </table>
