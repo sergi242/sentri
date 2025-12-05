@@ -87,8 +87,12 @@
     @endphp
     @foreach ($fronts as $frontiere)
         @php
-            $entree = TechnoDev::joinFluxData($item->id, $frontiere->id, $dtone, $dtwo)->tentree ?? 0;
-            $sortie = TechnoDev::joinFluxData($item->id, $frontiere->id, $dtone, $dtwo)->tsortie ?? 0;
+            // Une seule récupération par frontière
+            $flux = TechnoDev::joinFluxData($item->id, $frontiere->id, $dtone, $dtwo);
+
+            $entree = $flux->tentree ?? 0;
+            $sortie = $flux->tsortie ?? 0;
+
             $totalEntréePays += $entree;
             $totalSortiePays += $sortie;
         @endphp
