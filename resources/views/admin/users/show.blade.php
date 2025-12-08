@@ -72,6 +72,10 @@
                                     <th>Soit Transmis</th>
                                     <td><span class="badge" style="background-color: #3f73ac; color: white; font-weight: bold;">{{ $user->soit_transmis_count ?? 0 }}</span></td>
                                 </tr>
+                                <tr>
+                                    <th>Flux Migratoire</th>
+                                    <td><span class="badge" style="background-color: #3f73ac; color: white; font-weight: bold;">{{ $user->flux_migratoires_count ?? 0 }}</span></td>
+                                </tr>
                             </table>
                         </div>
                     </div>

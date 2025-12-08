@@ -238,9 +238,9 @@ class UserController extends Controller
     {
         $user = User::withCount([
             'demandes as demandes_creees_count',
-            'soitTransmis as soit_transmis_count'
+            'soitTransmis as soit_transmis_count',
+            'fluxMigratoires as flux_migratoires_count'            
         ])->findOrFail($id);
-
         return view('admin.users.show', compact('user'));
     }
 
@@ -335,9 +335,9 @@ class UserController extends Controller
     //Exportation des details d'activitÃ© des utilisateurs 
     public function exportUserActivitiesPdf($id)
     {
-        $user = User::with(['demandes', 'soitTransmis'])
+        $user = User::with(['demandes', 'soitTransmis', 'fluxMigratoires'])
             ->findOrFail($id);
-
+        //dd($user);
         $html = view('admin.reporting.users.activite', compact('user'))->render();
 
         $html2pdf = new Html2Pdf('P', 'A4', 'fr');
