@@ -8,90 +8,330 @@
     <link rel="stylesheet" href="{{ asset('res/app-assets/vendors/css/forms/selects/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('img/editorial.css') }}" type="text/css">
 
-    <style>
-        /* Style "diplomatique" léger */
+<style>
+    /* Design moderne et élégant */
+    .diplomatic-page {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+        padding: 30px;
+        min-height: 100vh;
+    }
+    .head-title{
+        color: #d1dae6;
+    }
+
+    .diplomatic-header-top h1#quittance {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        margin-bottom: 5px;
+    }
+
+    .diplomatic-header-top h4,
+    .diplomatic-header-top h6 {
+        margin: 0;
+        line-height: 1.3;
+    }
+
+    .diplomatic-logo {
+        max-height: 80px;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+        transition: transform 0.3s ease;
+    }
+
+    .diplomatic-logo:hover {
+        transform: scale(1.05);
+    }
+
+    .diplomatic-banner {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2d3561 100%);
+        color: #fff;
+        padding: 25px;
+        border-radius: 12px;
+        align-items: center;
+        margin-top: 10px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        border: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .diplomatic-banner h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0;
+        text-transform: uppercase;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        letter-spacing: 1.5px;
+    }
+
+    .diplomatic-banner h4 {
+        font-size: 18px;
+        margin: 0;
+    }
+
+    .diplomatic-ministry {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #e8eef5;
+        display: block;
+        margin-top: 8px;
+        line-height: 1.6;
+        font-weight: 300;
+    }
+
+    .diplomatic-card {
+        border: none;
+        border-radius: 12px;
+        padding: 25px;
+        background-color: #ffffff;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+
+    .diplomatic-card:hover {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+
+    .form-section {
+        border-bottom: 2px solid #e3e9f2;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        font-size: 14px;
+        font-weight: 700;
+        color: #2d3561;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-section i {
+        font-size: 18px;
+        color: #1a1a2e;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-control {
+        border: 1.5px solid #d1dae6;
+        border-radius: 8px;
+        padding: 10px 15px;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        background-color: #fafbfd;
+    }
+
+    .form-control:focus {
+        border-color: #2d3561;
+        box-shadow: 0 0 0 0.2rem rgba(45, 53, 97, 0.15);
+        outline: none;
+        background-color: #ffffff;
+    }
+
+    .col-form-label {
+        font-weight: 500;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .form-actions {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #e3e9f2;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .btn {
+        border-radius: 8px;
+        padding: 12px 30px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2d3561 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2d3561 0%, #1a1a2e 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    }
+
+    .tb {
+        text-align: center;
+    }
+
+    #carte {
+        max-height: 70px;
+    }
+
+    /* Style amélioré pour les checkboxes */
+    input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #2d3561;
+    }
+
+    /* Style amélioré pour les radio buttons */
+    input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #2d3561;
+        margin-right: 5px;
+    }
+
+    label[for="preview"],
+    label[for="validate"] {
+        cursor: pointer;
+        font-weight: 500;
+        color: #333;
+        padding: 8px 12px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    label[for="preview"]:hover,
+    label[for="validate"]:hover {
+        background-color: #e8eef5;
+    }
+
+    /* Animation pour le fade in */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animated.fadeIn {
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    /* Messages d'erreur */
+    .invalid-feedback {
+        display: block;
+        margin-top: 5px;
+        font-size: 13px;
+        color: #dc3545;
+    }
+
+    .is-invalid {
+        border-color: #dc3545 !important;
+        background-color: #fff5f5 !important;
+    }
+
+    /* Style personnalisé pour les inputs file */
+    input[type="file"] {
+        padding: 8px 12px;
+    }
+
+    input[type="file"]::-webkit-file-upload-button {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2d3561 100%);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 10px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    input[type="file"]::-webkit-file-upload-button:hover {
+        background: linear-gradient(135deg, #2d3561 0%, #1a1a2e 100%);
+    }
+
+    /* Select custom */
+    select.form-control {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232d3561' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 35px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
         .diplomatic-page {
-    background-color: #112769;   /* Beige élégant */
-    padding: 20px;
-}
-
-
-
-        .diplomatic-header-top h1#quittance {
-            font-size: 26px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-
-        .diplomatic-header-top h4,
-        .diplomatic-header-top h6 {
-            margin: 0;
-            line-height: 1.3;
-        }
-
-        .diplomatic-logo {
-            max-height: 80px;
+            padding: 15px;
         }
 
         .diplomatic-banner {
-            background-color: #000;
-            color: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            align-items: center;
-            margin-top: 10px;
-            margin-bottom: 15px;
+            padding: 20px 15px;
         }
 
         .diplomatic-banner h1 {
-            font-size: 30px;
-            font-weight: 700;
-            margin: 0;
-            text-transform: uppercase;
+            font-size: 20px;
         }
-
-        .diplomatic-banner h4 {
-            font-size: 18px;
-            margin: 0;
-        }
-
-        .diplomatic-ministry {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #f1f1f1;
-            display: block;
-            margin-top: 5px;
-        }
-
+        
         .diplomatic-card {
-            border: 1px solid #000;
-            border-radius: 10px;
-            padding: 10px 15px;
-            background-color: #fff;
-        }
-
-        .form-section {
-            border-bottom: 1px solid #e0e0e0;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            font-size: 14px;
-            font-weight: 600;
+            margin-bottom: 20px;
+            padding: 20px;
         }
 
         .form-actions {
-            margin-top: 15px;
+            flex-direction: column;
         }
 
-        .tb {
-            text-align: center;
+        .btn {
+            width: 100%;
         }
 
-        #carte {
-            max-height: 70px;
+        .col-form-label {
+            margin-bottom: 5px;
         }
-    </style>
+    }
+
+    /* Scrollbar personnalisée */
+    .diplomatic-page::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .diplomatic-page::-webkit-scrollbar-track {
+        background: #f1f3f6;
+        border-radius: 10px;
+    }
+
+    .diplomatic-page::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #2d3561 0%, #1a1a2e 100%);
+        border-radius: 10px;
+    }
+
+    .diplomatic-page::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2d3561 100%);
+    }
+</style>
+
 @endsection
 
 @section('content')
@@ -114,8 +354,8 @@
                                             <img src="{{ asset('img/armoi_2.png') }}" class="diplomatic-logo" alt="Armoiries">
                                         </div>
                                         <div class="col-md-10 text-center">
-                                            <h1>Demande de délivrance</h1>
-                                            <h1>de carte de résident et Visa – Corps diplomatique</h1>
+                                            <h1 class="head-title">Demande de délivrance</h1>
+                                            <h1 class="head-title">de carte de résident et Visa – Corps diplomatique</h1>
                                         </div>
                                         <div class="col-md-1 text-center">
                                             <img src="{{ asset('img/armoi_2.png') }}" class="diplomatic-logo" alt="Armoiries">
