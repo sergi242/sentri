@@ -51,7 +51,7 @@ Route::middleware("auth")->group(function(){
             Route::post("store", "store")->name("users.store")->middleware("can:users.create");
             Route::put("change-password", "change_password")->name("users.changepassword");
             Route::get("{id}/edit", "edit")->name("users.edit")->middleware("can:users.edit");
-            Route::put("{id}/update", "update")->name("users.update")->middleware("can:users.edit");
+            Route::put("{id}/update","update")->name("users.update")->middleware("can:users.edit");
             Route::delete("{id}/destroy", "destroy")->name("users.destroy")->middleware("can:users.destroy");
 
             Route::put('/users/{id}/reset-password', 'resetPassword')->name('users.reset-password');

@@ -146,11 +146,12 @@
                                         <tr>
                                             <td class="majuscule">
                                                 fait à Brazzaville le : <strong>
-                                                   @if($demande->fiches->count() > 0)
-                                                        {{ date('d/m/Y', strtotime($demande->fiches->last()->date_emission_fiche)) }}
-                                                   @else
-                                                        {{ date('d/m/Y', strtotime($demande->updated_at)) }}
-                                                   @endif
+                                                   @if(!empty($demande->date_demande))
+     {{ \Carbon\Carbon::parse($demande->date_demande)->format('d/m/Y') }}
+@else
+    {{ \Carbon\Carbon::parse($demande->created_at)->format('d/m/Y') }}
+@endif
+
                                                 </strong>
                                             </td>
                                         </tr>

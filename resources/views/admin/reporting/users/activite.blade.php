@@ -23,7 +23,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td style="text-align: center;">
+                                <td style="text-align: center;" class="size4">
                                     CENTRALE D'INTELLIGENCE<br>
                                     ET DE LA DOCUMENTATION
                                 </td>
@@ -90,11 +90,15 @@
         
                 <td style="width: 30%; text-align: center;">
                     <div class="photo-placeholder">
-                        @if($user->photo)
-                            <img src="{{ $user->photo }}" style="max-width: 146px; max-height: 146px; border-radius: 5px;">
+                        @if($user->photo && file_exists(public_path('uploads/users/'.$user->photo)))
+                            <img 
+                                src="{{ public_path('uploads/users/'.$user->photo) }}"
+                                style="width:120px; height:150px; border:1px solid #000;"
+                            >
                         @else
-                            <span>Photo non disponible</span>
+                            
                         @endif
+
                     </div>
                 </td>
             </tr>
@@ -109,6 +113,12 @@
                 <th style="background-color: #2c5aa0; color: white; padding: 8px 12px; text-align: left; border: 1px solid #1e4070;">Demandes Créées</th>
                 <td style="padding: 8px 12px; text-align: center; border: 1px solid #ddd; background-color: white;">
                     <span style="font-size: 12px; font-weight: bold; color: #d32f2f;">{{ $user->demandes->count() }}</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="background-color: #2c5aa0; color: white; padding: 8px 12px; text-align: left; border: 1px solid #1e4070;">Demandes Attribuée</th>
+                <td style="padding: 8px 12px; text-align: center; border: 1px solid #ddd; background-color: white;">
+                    <span style="font-size: 12px; font-weight: bold; color: #d32f2f;">{{ $user->dossiers_attribues_count }}</span>
                 </td>
             </tr>
             <tr>

@@ -32,25 +32,50 @@
                             </h4>
                         </div>
                         <div class="card-content" style="padding: 15px;">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <th>Nom Complet</th>
-                                    <td>{{ $user->getNomPrenom() }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Email</th>
-                                    <td>{{ $user->email }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Rôle</th>
-                                    <td>{{ $user->role?->lib_role }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Grade</th>
-                                    <td>{{ $user->grade?->grade ?? 'Non défini' }}</td>
-                                </tr>
-                            </table>
-                        </div>
+    <div class="row">
+        <!-- Tableau infos -->
+        <div class="col-md-9">
+            <table class="table table-bordered mb-0">
+                <tr>
+                    <th>Nom Complet</th>
+                    <td>{{ $user->getNomPrenom() }}</td>
+                </tr>
+                <tr>
+                    <th>Email</th>
+                    <td>{{ $user->email }}</td>
+                </tr>
+                <tr>
+                    <th>Rôle</th>
+                    <td>{{ $user->role?->lib_role }}</td>
+                </tr>
+                <tr>
+                    <th>Grade</th>
+                    <td>{{ $user->grade?->grade ?? 'Non défini' }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Photo -->
+        <div class="col-md-3 text-center">
+            @if($user->photo)
+                <img src="{{ asset('uploads/users/'.$user->photo) }}"
+                     style="width:110px;height:140px;object-fit:cover;
+                            border:2px solid #3f73ac;border-radius:4px;">
+            @else
+                <div style="width:110px;height:140px;
+                            border:2px dashed #ccc;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            font-size:11px;
+                            color:#999;">
+                    Photo<br>non disponible
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+
                     </div>
                 </div>
 

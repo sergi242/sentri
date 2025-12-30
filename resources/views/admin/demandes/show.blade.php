@@ -24,19 +24,141 @@
                                         <div class="form-body">
                                             <h4 class="form-section"><i class="ft-user"></i> Information de l'Impétrant | Statut de la demande : <strong>{{ $demande->statut_demande }}</strong> </h4>
                                             <div class="form-group row">
-                                                <label class="col-md-3 label-control" for="nom"></label>
-                                                <div class="col-md-3 mx-auto">
-                                                    <img src="{{asset("app/$demande->photo")}}" alt="" width="150" height="150" class="img-fluid">
-                                                </div>
+    @php
+    use App\Models\Pays;
+
+    $pays = null;
+
+    if ($demande->impetrant && $demande->impetrant->nationalites_id) {
+        $pays = Pays::find($demande->impetrant->nationalites_id);
+    }
+
+    $flagPath = $pays && $pays->code
+        ? 'res/flags/' . strtolower(trim($pays->code)) . '.png'
+        : null;
+    @endphp
+
+<div class="col-md-3 d-flex justify-content-center">
+    <div class="d-flex align-items-center">
+
+        <div class="photo-box">
+            <img src="{{ asset('app/'.$demande->photo) }}" alt="Photo de l'impétrant">
+        </div>
+
+        @if($flagPath && file_exists(public_path($flagPath)))
+            <div class="flag-box">
+                <img src="{{ asset($flagPath) }}" alt="Drapeau">
+                <div class="flag-label">
+                    {{ $pays->lib_pays }}
+                </div>
+            </div>
+        @endif
+
+    </div>
+</div>
+
+<style>
+.photo-box {
+    width: 180px;
+    height: 180px;
+    border: 2px solid #e5e5e5;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.photo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.flag-box {
+    margin-left: 20px; /* ← ESPACE RÉEL */
+    padding: 8px 10px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    text-align: center;
+    min-width: 90px;
+}
+
+.flag-box img {
+    width: 64px;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.flag-label {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+}
+</style>
+
+
+
+
+
 
                                                 <div class="col-md-6 mx-auto">
                                                         @if ($demande->statut_demande == "En attente d'approbation")
-                                                        <form action="{{route('demandes.changestate',$demande->id)}}" method="POST">
+                                                       <!-- <form action="{{route('demandes.changestate',$demande->id)}}" method="POST">
                                                             @csrf
                                                             @method('PUT')
                                                             <input type="hidden" name="statut_demande" value="Approuvée">
-                                                            <button type="submit" class="btn btn-success btn-block mb-1">Appprouver</button>
-                                                        </form>
+                                                            <button type="submit" class="btn btn-success btn-block mb-1">Approuver</button>
+                                                        </form> -->
+
+                                                        <!-- Bouton qui ouvre la confirmation -->
+<button type="button" class="btn btn-success btn-block mb-1" data-toggle="modal" data-target="#confirmApprovalModal">
+    Approuver
+</button>
+
+<!-- Modal de confirmation -->
+<div class="modal fade" id="confirmApprovalModal" tabindex="-1" role="dialog" aria-labelledby="confirmApprovalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="confirmApprovalLabel">
+                    ⚠️ Confirmation d’approbation
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <p>
+                    Vous êtes sur le point <strong>d’approuver définitivement</strong> cette demande.
+                </p>
+                <p class="text-danger">
+                    Cette action est <strong>irréversible</strong>.
+                </p>
+                <p>
+                    Confirmez-vous cette décision ?
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Annuler
+                </button>
+
+                <form action="{{route('demandes.changestate',$demande->id)}}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="statut_demande" value="Approuvée">
+                    <button type="submit" class="btn btn-success">
+                        ✅ Confirmer l’approbation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
                                                         <a href="{{route("demandes.create.contentieux",$demande->id)}}" class="btn btn-warning btn-block mb-1">Envoyer au contentieux</a>
                                                         @endif
 
@@ -45,7 +167,7 @@
                                                             @csrf
                                                             @method('PUT')
                                                             <input type="hidden" name="statut_demande" value="Approuvée">
-                                                            <button type="submit" class="btn btn-success btn-block mb-1">Appprouver</button>
+                                                            <button type="submit" class="btn btn-success btn-block mb-1">Approuver</button>
                                                         </form>
                                                         @endif
 
@@ -190,9 +312,24 @@
                                             <div class="form-group row">
                                                 <label class="col-md-3 label-control" for="nationalites_id">Nationalité(s) *</label>
                                                 <div class="col-md-9 mx-auto">
-                                                    @foreach ($demande->impetrant->nationalites as $nationalite)
-                                                        <span class="badge badge-primary">{{ $nationalite->pays?->nationalite }}</span>
-                                                    @endforeach
+@php
+
+    $badgeNationalite = null;
+
+    if ($demande->impetrant && $demande->impetrant->nationalites_id) {
+        $paysNat = Pays::find($demande->impetrant->nationalites_id);
+
+        if ($paysNat) {
+            $badgeNationalite = $paysNat->nationalite ?: $paysNat->lib_pays;
+        }
+    }
+@endphp
+
+@if($badgeNationalite)
+    <span class="badge badge-primary">{{ $badgeNationalite }}</span>
+@endif
+
+
                                                 </div>
                                             </div>
                                             <h4 class="form-section"><i class="ft-home"></i> Information de contact</h4>

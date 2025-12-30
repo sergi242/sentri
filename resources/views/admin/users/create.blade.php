@@ -20,10 +20,21 @@
                         <div class="card">
                             <div class="card-content collpase show">
                                 <div class="card-body">
-                                    <form class="form form-horizontal" method="POST" action="{{route('users.store')}}">
+                                    <form class="form form-horizontal" method="POST" action="{{route('users.store')}}" enctype="multipart/form-data">
                                         @csrf
                                         <div class="form-body">
                                             <h4 class="form-section"><i class="ft-user"></i> Information de l'Utilisateur</h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control">Photo *</label>
+                                                <div class="col-md-9">
+                                                    <input type="file" name="photo" class="form-control">
+                                                    @error('photo')
+                                                        <div class="invalid-feedback">
+                                                                {{$message}}
+                                                        </div>
+                                                    @enderror
+                                                </div>
+                                            </div>
                                             <div class="form-group row">
                                                 <label class="col-md-3 label-control" for="projectinput1">Prénom *</label>
                                                 <div class="col-md-9 mx-auto">

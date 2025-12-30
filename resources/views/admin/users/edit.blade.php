@@ -25,6 +25,23 @@
                                         @method('PUT')
                                         <div class="form-body">
                                             <h4 class="form-section"><i class="ft-user"></i> Information de l'Utilisateur</h4>
+<div class="form-group row">
+    <label class="col-md-3 label-control">Photo</label>
+    <div class="col-md-9">
+        <input type="file" name="photo" class="form-control">
+        
+        @if($user->photo)
+            <div class="mt-2">
+                <img src="{{ asset('uploads/users/'.$user->photo) }}"
+                     width="120"
+                     class="img-thumbnail">
+            </div>
+        @endif
+    </div>
+</div>
+
+
+
                                             <div class="form-group row">
                                                 <label class="col-md-3 label-control" for="projectinput1">Prénom *</label>
                                                 <div class="col-md-9 mx-auto">

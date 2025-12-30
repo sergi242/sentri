@@ -42,7 +42,7 @@
                                                 <th>Email</th>
                                                 <th>Role</th>
                                                 <th>Grade</th>
-                                                <th>Status</th>
+                                                <th>Photo</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -55,7 +55,15 @@
                                                     <td>{{ $user->email }}</td>
                                                     <td>{{ $user->role?->lib_role }}</td>
                                                     <td>{{ $user->grade?->grade }}</td>
-                                                    <td>{{ $user->active == 1 ? "Actif":"Inactif" }}</td>
+                                                    <td>
+                                                        @if($user->photo)
+    <img src="{{ asset('uploads/users/'.$user->photo) }}"
+         width="40"
+         class="rounded-circle">
+@else
+    <span class="badge badge-secondary">N/A</span>
+@endif
+                                                    </td>
                                                     <td>
                                                         <div class="btn-group btn-block">
                                                             <button type="button" class="btn btn-dark btn-sm">Action</button>
@@ -83,7 +91,7 @@
                                                 <th>Email</th>
                                                 <th>Role</th>
                                                 <th>Grade</th>
-                                                <th>Status</th>
+                                                <th>Photo</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </tfoot>

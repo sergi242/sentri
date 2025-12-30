@@ -67,35 +67,51 @@ class UserController extends Controller
         return view("admin.users.create",compact("roles","grades"));
     }
 
-    public function store(Request $request){
-        $request->validate([
-            "nom"=>"required|string",
-            "prenom"=>"required|string",
-            "email"=>"email|unique:users",
-            "roles_id"=>"numeric",
-            "active"=>"required|numeric",
-            "password"=>"string|confirmed",
-            "grades_id"=>"required"
-        ]);
+    public function store(Request $request)
+{
+    $request->validate([
+        "nom" => "required|string",
+        "prenom" => "required|string",
+        "email" => "required|email|unique:users",
+        "roles_id" => "required|numeric",
+        "grades_id" => "required|numeric",
+        "active" => "required|numeric",
+        "password" => "required|string|confirmed|min:6",
+        "photo" => "nullable|image|mimes:jpg,jpeg,png|max:2048",
+    ]);
 
-        try {
-            $user = new User;
-            $user->nom = $request->nom;
-            $user->prenom = $request->prenom;
-            $user->grades_id = $request->grades_id;
-            $user->email = $request->email;
-            $user->active = $request->active;
-            $user->password = Hash::make($request->password);
-            $user->roles_id = $request->roles_id;
+    try {
+        $user = new User();
+
+        $user->nom = $request->nom;
+        $user->prenom = $request->prenom;
+        $user->email = $request->email;
+        $user->grades_id = $request->grades_id;
+        $user->roles_id = $request->roles_id;
+        $user->active = $request->active;
+        $user->password = Hash::make($request->password);
+
+        // 1️⃣ Sauvegarde pour générer l'ID
+        $user->save();
+
+        // 2️⃣ Upload photo APRÈS
+        if ($request->hasFile('photo')) {
+            $photo = $request->file('photo');
+            $filename = 'user_' . $user->id . '.' . $photo->getClientOriginalExtension();
+            $photo->move(public_path('uploads/users'), $filename);
+            $user->photo = $filename;
             $user->save();
-            toastr()->success("Utilisateur ajoutÃ© avec succÃ¨s");
-            return redirect()->route("users.index");
-        } catch (Exception $e) {
-            Log::channel("loggin")->error($e->getMessage());
-            toastr()->error($e->getMessage());
-            return back()->withInput();
         }
+
+        toastr()->success("Utilisateur ajouté avec succès");
+        return redirect()->route("users.index");
+
+    } catch (\Exception $e) {
+        toastr()->error($e->getMessage());
+        return back()->withInput();
     }
+}
+
 
     public function edit($id){
         $user = User::find($id);
@@ -109,39 +125,63 @@ class UserController extends Controller
         return view("admin.users.edit",compact("user","roles","grades"));
     }
 
-    public function update(Request $request, $id){
-        $request->validate([
-            "nom"=>"required|string",
-            "prenom"=>"required|string",
-            "email"=>"email",
-            "roles_id"=>"numeric",
-            "active"=>"required|numeric",
-            "grades_id"=>"required"
-        ]);
+   public function update(Request $request, $id)
+{
+  
 
-        $user = User::find($id);
-        if($user == null){
-            toastr()->error("Impossible de traiter cette requÃªte");
-            return back();
-        }
 
-        try {
-            $user->nom = $request->nom;
-            $user->prenom = $request->prenom;
-            $user->email = $request->email;
-            $user->grades_id = $request->grades_id;
-            $user->active = $request->active;
-            $user->roles_id = $request->roles_id;
-            $user->password = Hash::make($request->password);
-            $user->save();
-            toastr()->success("Utilisateur modifiÃ© avec succÃ¨s");
-            return back();
-        } catch (Exception $e) {
-            Log::channel("loggin")->error($e->getMessage());
-            toastr()->error($e->getMessage());
-            return back()->withInput();
-        }
+    $request->validate([
+        "nom" => "required|string",
+        "prenom" => "required|string",
+        "email" => "email",
+        "roles_id" => "numeric",
+        "active" => "required|numeric",
+        "grades_id" => "required",
+        "photo" => "nullable|image|mimes:jpg,jpeg,png|max:2048"
+    ]);
+
+    $user = User::find($id);
+
+    if (!$user) {
+        toastr()->error("Utilisateur introuvable");
+        return back();
     }
+
+    try {
+        $user->nom = $request->nom;
+        $user->prenom = $request->prenom;
+        $user->email = $request->email;
+        $user->grades_id = $request->grades_id;
+        $user->active = $request->active;
+        $user->roles_id = $request->roles_id;
+
+        // 📸 TRAITEMENT PHOTO (MODIFICATION)
+        if ($request->hasFile('photo')) {
+
+            // Supprimer ancienne photo si existe
+            if ($user->photo && file_exists(public_path('uploads/users/'.$user->photo))) {
+                unlink(public_path('uploads/users/'.$user->photo));
+            }
+
+            $photo = $request->file('photo');
+            $filename = 'user_'.$user->id.'_'.time().'.'.$photo->getClientOriginalExtension();
+            $photo->move(public_path('uploads/users'), $filename);
+
+            $user->photo = $filename;
+        }
+
+        $user->save();
+
+        toastr()->success("Utilisateur modifié avec succès");
+        return back();
+
+    } catch (Exception $e) {
+        Log::error($e->getMessage());
+        toastr()->error("Erreur lors de la modification");
+        return back()->withInput();
+    }
+}
+
 
     public function destroy($id){
         $user = User::find($id);
@@ -333,17 +373,26 @@ class UserController extends Controller
 
 
     //Exportation des details d'activitÃ© des utilisateurs 
-    public function exportUserActivitiesPdf($id)
-    {
-        $user = User::with(['demandes', 'soitTransmis', 'fluxMigratoires'])
-            ->findOrFail($id);
-        //dd($user);
-        $html = view('admin.reporting.users.activite', compact('user'))->render();
+public function exportUserActivitiesPdf($id)
+{
+    $user = User::with([
+        'demandes',
+        'soitTransmis',
+        'fluxMigratoires'
+    ])->findOrFail($id);
 
-        $html2pdf = new Html2Pdf('P', 'A4', 'fr');
-        $html2pdf->setDefaultFont('Times');
-        $html2pdf->writeHTML($html);
+    // ✅ COMPTE RÉEL DES DOSSIERS ATTRIBUÉS PAR L’UTILISATEUR
+    $user->dossiers_attribues_count = Demande::where('attribue', 1)
+        ->where('attribue_par', $id)
+        ->count();
 
-        return $html2pdf->output('details_utilisateur.pdf', 'I');
-    }
+    $html = view('admin.reporting.users.activite', compact('user'))->render();
+
+    $html2pdf = new Html2Pdf('P', 'A4', 'fr');
+    $html2pdf->setDefaultFont('Times');
+    $html2pdf->writeHTML($html);
+
+    return $html2pdf->output('details_utilisateur.pdf', 'I');
+}
+
 }

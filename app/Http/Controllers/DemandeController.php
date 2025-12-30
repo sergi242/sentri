@@ -793,7 +793,9 @@ class DemandeController extends Controller
             $demande->date_expiration = $date_expiration;
             $demande->date_attribution = Carbon::now();
             $demande->attribue = 1;
+            $demande->attribue_par = Auth::id(); // 👈 L’UTILISATEUR QUI ATTRIBUE
             $demande->save();
+
             toastr()->success("Information du document ajoutée avec succès");
             return redirect()->route("demandes.show",$id);
         } catch (Exception $e) {
