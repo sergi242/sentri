@@ -1,3 +1,19 @@
+Migration personnalisée – Colonne photo
+**********************************
+Une migration spécifique permet de réajouter la colonne photo à la table users sans impacter les autres migrations.
+Détail de la colonne
+photo VARCHAR(255) NULL
+Exécution ciblée (recommandée)
+Lancer uniquement la migration concernée :
+php artisan migrate --path=database/migrations/2026_01_06_XXXXXX_add_photo_to_users_table.php --force
+**********************************
+
+
+
+
+
+
+
 implementation 'com.googlecode.tesseract-android:tessearct:3.03'
 implementation 'com.rmtheis:tess-two:9.0.0'
 
