@@ -68,49 +68,49 @@ class UserController extends Controller
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        "nom" => "required|string",
-        "prenom" => "required|string",
-        "email" => "required|email|unique:users",
-        "roles_id" => "required|numeric",
-        "grades_id" => "required|numeric",
-        "active" => "required|numeric",
-        "password" => "required|string|confirmed|min:6",
-        "photo" => "nullable|image|mimes:jpg,jpeg,png|max:2048",
-    ]);
+    {
+        $request->validate([
+            "nom" => "required|string",
+            "prenom" => "required|string",
+            "email" => "required|email|unique:users",
+            "roles_id" => "required|numeric",
+            "grades_id" => "required|numeric",
+            "active" => "required|numeric",
+            "password" => "required|string|confirmed|min:6",
+            "photo" => "nullable|image|mimes:jpg,jpeg,png|max:2048",
+        ]);
 
-    try {
-        $user = new User();
+        try {
+            $user = new User();
 
-        $user->nom = $request->nom;
-        $user->prenom = $request->prenom;
-        $user->email = $request->email;
-        $user->grades_id = $request->grades_id;
-        $user->roles_id = $request->roles_id;
-        $user->active = $request->active;
-        $user->password = Hash::make($request->password);
+            $user->nom = $request->nom;
+            $user->prenom = $request->prenom;
+            $user->email = $request->email;
+            $user->grades_id = $request->grades_id;
+            $user->roles_id = $request->roles_id;
+            $user->active = $request->active;
+            $user->password = Hash::make($request->password);
 
-        // 1️⃣ Sauvegarde pour générer l'ID
-        $user->save();
-
-        // 2️⃣ Upload photo APRÈS
-        if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $filename = 'user_' . $user->id . '.' . $photo->getClientOriginalExtension();
-            $photo->move(public_path('uploads/users'), $filename);
-            $user->photo = $filename;
+            // 1️⃣ Sauvegarde pour générer l'ID
             $user->save();
+
+            // 2️⃣ Upload photo APRÈS
+            if ($request->hasFile('photo')) {
+                $photo = $request->file('photo');
+                $filename = 'user_' . $user->id . '.' . $photo->getClientOriginalExtension();
+                $photo->move(public_path('uploads/users'), $filename);
+                $user->photo = $filename;
+                $user->save();
+            }
+
+            toastr()->success("Utilisateur ajouté avec succès");
+            return redirect()->route("users.index");
+
+        } catch (\Exception $e) {
+            toastr()->error($e->getMessage());
+            return back()->withInput();
         }
-
-        toastr()->success("Utilisateur ajouté avec succès");
-        return redirect()->route("users.index");
-
-    } catch (\Exception $e) {
-        toastr()->error($e->getMessage());
-        return back()->withInput();
     }
-}
 
 
     public function edit($id){
@@ -126,61 +126,61 @@ class UserController extends Controller
     }
 
    public function update(Request $request, $id)
-{
-  
+    {
+    
 
 
-    $request->validate([
-        "nom" => "required|string",
-        "prenom" => "required|string",
-        "email" => "email",
-        "roles_id" => "numeric",
-        "active" => "required|numeric",
-        "grades_id" => "required",
-        "photo" => "nullable|image|mimes:jpg,jpeg,png|max:2048"
-    ]);
+        $request->validate([
+            "nom" => "required|string",
+            "prenom" => "required|string",
+            "email" => "email",
+            "roles_id" => "numeric",
+            "active" => "required|numeric",
+            "grades_id" => "required",
+            "photo" => "nullable|image|mimes:jpg,jpeg,png|max:2048"
+        ]);
 
-    $user = User::find($id);
+        $user = User::find($id);
 
-    if (!$user) {
-        toastr()->error("Utilisateur introuvable");
-        return back();
-    }
-
-    try {
-        $user->nom = $request->nom;
-        $user->prenom = $request->prenom;
-        $user->email = $request->email;
-        $user->grades_id = $request->grades_id;
-        $user->active = $request->active;
-        $user->roles_id = $request->roles_id;
-
-        // 📸 TRAITEMENT PHOTO (MODIFICATION)
-        if ($request->hasFile('photo')) {
-
-            // Supprimer ancienne photo si existe
-            if ($user->photo && file_exists(public_path('uploads/users/'.$user->photo))) {
-                unlink(public_path('uploads/users/'.$user->photo));
-            }
-
-            $photo = $request->file('photo');
-            $filename = 'user_'.$user->id.'_'.time().'.'.$photo->getClientOriginalExtension();
-            $photo->move(public_path('uploads/users'), $filename);
-
-            $user->photo = $filename;
+        if (!$user) {
+            toastr()->error("Utilisateur introuvable");
+            return back();
         }
 
-        $user->save();
+        try {
+            $user->nom = $request->nom;
+            $user->prenom = $request->prenom;
+            $user->email = $request->email;
+            $user->grades_id = $request->grades_id;
+            $user->active = $request->active;
+            $user->roles_id = $request->roles_id;
 
-        toastr()->success("Utilisateur modifié avec succès");
-        return back();
+            // 📸 TRAITEMENT PHOTO (MODIFICATION)
+            if ($request->hasFile('photo')) {
 
-    } catch (Exception $e) {
-        Log::error($e->getMessage());
-        toastr()->error("Erreur lors de la modification");
-        return back()->withInput();
+                // Supprimer ancienne photo si existe
+                if ($user->photo && file_exists(public_path('uploads/users/'.$user->photo))) {
+                    unlink(public_path('uploads/users/'.$user->photo));
+                }
+
+                $photo = $request->file('photo');
+                $filename = 'user_'.$user->id.'_'.time().'.'.$photo->getClientOriginalExtension();
+                $photo->move(public_path('uploads/users'), $filename);
+
+                $user->photo = $filename;
+            }
+
+            $user->save();
+
+            toastr()->success("Utilisateur modifié avec succès");
+            return back();
+
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            toastr()->error("Erreur lors de la modification");
+            return back()->withInput();
+        }
     }
-}
 
 
     public function destroy($id){
