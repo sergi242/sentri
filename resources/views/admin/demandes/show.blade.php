@@ -178,6 +178,17 @@
                                                         <table class="table table-bordered">
                                                             <tr>
                                                                 <td><a href="{{ route("demandes.edit",$demande->id) }}" class="btn btn-primary">Modifier</a></td>
+                                                                <td>
+                                                                    <form action="{{ route('demandes.destroy', $demande->id) }}" method="POST" style="display:inline;">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-danger"
+                                                                            onclick="return confirm('Tu es sûr de vouloir supprimer ?')">
+                                                                            Supprimer
+                                                                        </button>
+                                                                    </form>
+                                                                </td>
+
 
                                                                 @if($demande->fiches->count() > 0)
                                                                     @if(\Carbon\Carbon::parse($demande->fiches->last()->date_valite_fiche)->gt(\Carbon\Carbon::now()))

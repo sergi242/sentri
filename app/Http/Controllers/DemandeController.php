@@ -700,7 +700,21 @@ class DemandeController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        //suppression de demande 
+        $demande = Demande::find($id);
+        if($demande == null){
+            toastr()->error("Impossible de traiter cette requête");
+            return back();
+        };
+        try {
+            $demande->delete();
+            toastr()->success("Demande supprimée avec succès");
+            return back();
+        } catch (Exception $e) {
+            Log::channel("loggin")->error($e->getMessage());
+            toastr()->error("Impossible de supprimer cette demande");
+            return back();
+        }
     }
 
     public function takephoto($id){
