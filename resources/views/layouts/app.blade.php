@@ -16,6 +16,11 @@
     <!-- Scripts -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 </head>
+@if(session('error'))
+<script>
+    toastr.error("{{session('error')}}");
+</script>
+@endif
 <body>
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">

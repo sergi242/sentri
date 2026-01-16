@@ -47,7 +47,7 @@
                                             <tr>
                                                 <th>Photo</th>
                                                 <th>Uuid</th>
-                                                <th>Nationnalité</th>
+                                                <th>Nationnalitï¿½</th>
                                                 <th>Genre</th>
                                                 <th>Nom du demandeur</th>
                                                 <th>Prenom du demandeur</th>
@@ -66,9 +66,17 @@
 *                                                       <td>
                                                             <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-start;">
                                                                 <!-- Bouton pour ouvrir le modal -->
-                                                                <button type="button" class="btn btn-sm btn-danger" onclick="openModal({{ $demande->id }})">
+                                                                 @if(auth()->user()->role?->lib_role === 'SuperAdmin')
+                                                                    <button type="button" class="btn btn-sm btn-danger" onclick="openModal({{ $demande->id }})">
                                                                     <i class="la la-trash-o"></i> Retirer
                                                                 </button>
+                                                                 @else
+                                                                    <button type="button" class="btn btn-sm btn-danger" disabled
+                                                                    style="cursor:notallowed; opacity:0.6">
+                                                                    <i class="la la-lock"></i> Retirer
+                                                                </button>
+                                                                 @endif
+                                                                
 
                                                                 <!-- Lien voir la demande -->
                                                                 <a href="{{ route('demandes.show', $demande->id) }}" class="btn btn-sm btn-secondary">
@@ -80,7 +88,7 @@
                                                             <div id="modal-{{ $demande->id }}" class="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
                                                                 <div style="background:#fff; padding:20px; max-width:400px; margin:10% auto; border-radius:8px; position:relative;">
                                                                     <h5>Confirmation</h5>
-                                                                    <p>Es-tu sûr de vouloir retirer cette demande ?</p>
+                                                                    <p>Es-tu sï¿½r de vouloir retirer cette demande ?</p>
 
                                                                     <form action="{{ route('soit-transmis.dropdemandes') }}" method="POST" style="margin-top: 15px;">
                                                                         @csrf
@@ -104,7 +112,7 @@
                                             <tr>
                                                 <th>Photo</th>
                                                 <th>Uuid</th>
-                                                <th>Nationnalité</th>
+                                                <th>Nationnalitï¿½</th>
                                                 <th>Genre</th>
                                                 <th>Nom du demandeur</th>
                                                 <th>Prenom du demandeur</th>
