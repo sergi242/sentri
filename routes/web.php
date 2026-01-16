@@ -137,6 +137,9 @@ Route::middleware("auth")->group(function(){
             Route::post("{id}/renouveler-fiche","renouvelerFiche")->name("demandes.renouveler.fiche")->middleware("can:demandes.renew");
             Route::put("{id}/store/remplirformation","storeremplirformation")->name("demandes.storeremplirformation")->middleware("can:demandes.grant");
             Route::delete("{id}/destroy","destroy")->name("demandes.destroy")->middleware("can:demandes.destroy");
+            Route::get("retirees", "retirees")->name("demandes.retirees")->middleware("can:demandes.destroy");
+            Route::post("{id}/restaurer", "restaurer")->name("demandes.restaurer")->middleware("can:demandes.destroy");
+
         });
     });
 

@@ -698,24 +698,76 @@ class DemandeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-        //suppression de demande 
-        $demande = Demande::find($id);
-        if($demande == null){
-            toastr()->error("Impossible de traiter cette requête");
-            return back();
-        };
-        try {
-            $demande->delete();
-            toastr()->success("Demande supprimée avec succès");
-            return back();
-        } catch (Exception $e) {
-            Log::channel("loggin")->error($e->getMessage());
-            toastr()->error("Impossible de supprimer cette demande");
-            return back();
-        }
+public function destroy(string $id)
+{
+    $demande = Demande::find($id);
+
+    if (!$demande) {
+        toastr()->error("Impossible de traiter cette requête");
+        return back();
     }
+
+    $impetrantId = $demande->impetrants_id;
+
+    DB::beginTransaction();
+    try {
+
+        // 🔒 Suppression logique
+        $demande->retire = 1;
+        $demande->retire_le = now();
+        $demande->retire_par = Auth::id();
+        $demande->save();
+
+        DB::commit();
+
+        toastr()->success("Demande retirée avec succès");
+        return redirect()->route('impetrants.demandes', $impetrantId);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error($e->getMessage());
+        toastr()->error("Erreur lors du retrait");
+        return back();
+    }
+}
+
+public function retirees()
+{
+    $demandes = Demande::where('retire', 1)
+        ->orderBy('retire_le', 'desc')
+        ->paginate(20);
+
+    return view('admin.demandes.retirees', compact('demandes'));
+}
+
+public function restaurer($id)
+{
+    $demande = Demande::find($id);
+
+    if (!$demande || !$demande->retire) {
+        toastr()->error("Demande introuvable ou non retirée");
+        return back();
+    }
+
+    DB::beginTransaction();
+    try {
+        $demande->retire = 0;
+        $demande->retire_le = null;
+        $demande->retire_par = null;
+        $demande->save();
+
+        DB::commit();
+        toastr()->success("Demande restaurée avec succès");
+        return back();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        toastr()->error("Erreur lors de la restauration");
+        return back();
+    }
+}
+
+
+
 
     public function takephoto($id){
         $demande = Demande::find($id);

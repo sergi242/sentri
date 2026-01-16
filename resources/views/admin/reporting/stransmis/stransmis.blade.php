@@ -215,11 +215,24 @@
                 </td>
             </tr>
             @foreach ($demandes as $key => $demande )
+            
                 <tr>
                     <td class="size3 espace_table_0" style="width: 32px; border-right: 1px solid black; border-left: 1px solid black;">{{ $key + 1 }}</td>
-                    <td class="size3" style="border-right: 1px solid black;">{{$demande->impetrant->nom}} {{$demande->impetrant->prenom}}</td>
-                    <td class="size3" style="border-right: 1px solid black;">{{$demande->impetrant->pays->nationalite}}</td>
-                    <td class="size3" style="border-right: 1px solid black; "></td>
+                    @if($demande->retire)
+    <td colspan="3" class="size3" style="border-right:1px solid black; color:red; font-weight:bold;">
+        DOSSIER RETIRÉ
+    </td>
+
+                            @else
+                                <td class="size3" style="border-right: 1px solid black;">
+                                    {{$demande->impetrant->nom}} {{$demande->impetrant->prenom}}
+                                </td>
+                                <td class="size3" style="border-right: 1px solid black;">
+                                    {{$demande->impetrant->pays->nationalite}}
+                                </td>
+                                <td class="size3" style="border-right: 1px solid black;"></td>
+                            @endif
+
                 </tr>
             @endforeach
 	    <tr>

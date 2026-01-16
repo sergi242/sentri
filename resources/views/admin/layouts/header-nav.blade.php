@@ -109,6 +109,7 @@ header nav
                         <li><a class="menu-item" href="{{route("demandes.approuvees")}}"><i></i><span data-i18n="Vertical">Demandes approuvées</span></a></li>
                         <li><a class="menu-item" href="{{route("demandes.contentieux")}}"><i></i><span data-i18n="Vertical">Demandes aux contentieux</span></a>
                         <li><a class="menu-item" href="{{route("demandes.impressioncartes")}}"><i></i><span data-i18n="Vertical">Impression cartes</span></a></li>
+                        <li><a class="menu-item" href="{{route("demandes.retirees")}}"><i></i><span data-i18n="Vertical">Demandes retirées</span></a></li>
                     </ul>
                 </li>
 

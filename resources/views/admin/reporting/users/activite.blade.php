@@ -1,30 +1,41 @@
-<page backimg="img/stransmis/stransmis.png" backimgopacity="0.5" backimgw="580">
+<page
+    backimg="img/stransmis/stransmis.png"
+    backimgopacity="0.5"
+    backimgw="580"
+>
+
+
+<div style="margin-left:06mm;">
+
     <!-- En-tête principal -->
-    <table style="margin-top: 7%">
+    <table>
         <tbody>
+            <tr>
+                <td style="text-align: center;">
+                    <table style="margin-top: 7%">
+        <tbody>
+            <!-- Contenu des lignes de tableau -->
             <tr>
                 <td style="text-align: center;">
                     <table>
                         <tbody>
+                            <!-- Contenu des lignes de tableau -->
                             <tr>
                                 <td style="text-align: center;" class="size4">
-                                    MINISTERE DE L'INTERIEUR<br>
+                                    MINISTERE DE L’INTERIEUR<br>
                                     ET DE LA DECENTRALISATION<br>
+                                    ----------------------
                                 </td>   
-                                <td style="text-align: center; width: 600px;" class="size4">
+                                <td style="text-align: center;  width: 500px;" class="size4">
                                     REPUBLIQUE DU CONGO <br>
                                     <strong>Unité – Travail - Progrès</strong> <br>
                                     ----------------------
                                 </td>        
                             </tr>
+                           
                             <tr>
-                                <td style="text-align: center;" class="size4">
-                                    ----------------------
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="text-align: center;" class="size4">
-                                    CENTRALE D'INTELLIGENCE<br>
+                                <td style="text-align: center;">
+                                    CENTRALE D’INTELLIGENCE<br>
                                     ET DE LA DOCUMENTATION
                                 </td>
                             </tr>
@@ -46,11 +57,17 @@
                                     ----------------------
                                 </td>
                                 <td class="size4">
-                                    Brazzaville, le  <strong style="color: #FF0000">{{date('d/m/Y')}}</strong>
+                                    Brazzaville, le  <strong style="color: #FF0000">{{ now()->format('d/m/Y') }}</strong>
                                 </td>
                             </tr>
+                                                       <!-- Vous pouvez générer les lignes avec une boucle PHP -->
                         </tbody>
                     </table>
+                </td>
+            </tr>
+            <!-- Autres lignes si nécessaire -->
+        </tbody>
+    </table>
                 </td>
             </tr>
         </tbody>
@@ -88,19 +105,29 @@
                     </table>
                 </td>
         
-                <td style="width: 30%; text-align: center;">
-                    <div class="photo-placeholder">
-                        @if($user->photo && file_exists(public_path('uploads/users/'.$user->photo)))
-                            <img 
-                                src="{{ public_path('uploads/users/'.$user->photo) }}"
-                                style="width:120px; height:150px; border:1px solid #000;"
-                            >
-                        @else
-                            
-                        @endif
+                <td style="width:30%; text-align:center; vertical-align:top; padding-top:0;">
 
-                    </div>
-                </td>
+ <table style="margin-top:5px; margin-left:390px; margin-right:auto; border-collapse:collapse;">
+        <tr>
+            <td style="
+                width:120px;
+                height:150px;
+                border:2px solid #2c5aa0;
+                text-align:right;
+                vertical-align:right;
+                background-color:#f0f4f8;
+            ">
+                @if($user->photo && file_exists(public_path('uploads/users/'.$user->photo)))
+                    <img
+                        src="{{ public_path('uploads/users/'.$user->photo) }}"
+                        style="width:120px; height:150px;"
+                    >
+                @endif
+            </td>
+        </tr>
+    </table>
+</td>
+
             </tr>
         </table>
 
@@ -116,7 +143,7 @@
                 </td>
             </tr>
             <tr>
-                <th style="background-color: #2c5aa0; color: white; padding: 8px 12px; text-align: left; border: 1px solid #1e4070;">Demandes Attribuée</th>
+                <th style="background-color: #2c5aa0; color: white; padding: 8px 12px; text-align: left; border: 1px solid #1e4070;">Demandes Attribuées</th>
                 <td style="padding: 8px 12px; text-align: center; border: 1px solid #ddd; background-color: white;">
                     <span style="font-size: 12px; font-weight: bold; color: #d32f2f;">{{ $user->dossiers_attribues_count }}</span>
                 </td>
@@ -152,24 +179,43 @@
                 @endforeach
             </div>
         @endif
+        <table style="margin-top: 20%">
+        <tbody>
+            <tr>
+                <td style="text-align: left;  width: 350px;" class="size3">
+
+                </td>
+                <td style="text-align: left;" class="size3">
+                   
+                    {
+                     <u>Lieutenant<Strong> Sergi ONDELE</Strong> </u>
+
+                    }
+                </td>
+            </tr>
+        </tbody>
+    </table>
     </div>
 
     <!-- Pied de page -->
-    <page_footer>
+    <!-- <page_footer>
         <p style="text-align: center; font-size: 10px;">Généré automatiquement le {{ now()->format('d/m/Y') }}</p>
-    </page_footer>
+    </page_footer> -->
+    </div>
+
 </page>
 
 <style>
     .size4 {
-        font-size: 12px;
+        font-size: 14px;
+        
     }
 
     .full-width-section {
         background-color: #2c5aa0; /* Bleu institution */
         margin: 10px 0;
         padding: 10px 0;
-        width: 100%;
+        width: 90%;
         box-sizing: border-box;
     }
 
@@ -199,15 +245,12 @@
     }
 
     .statistiques-detailles {
-        display: flex;
-        flex-wrap: wrap;
+        width:83%
         gap: 15px;
         margin-top: 10px;
     }
 
     .statut-item {
-        flex: 1 1 calc(50% - 15px);
-        display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 10px 15px;
