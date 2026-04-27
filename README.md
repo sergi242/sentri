@@ -45,3 +45,4 @@ To release resources and clean up, add the following code snippet to your main a
 if (tessBaseAPI != null) {
     tessBaseAPI.end();
 }
+# sentri
