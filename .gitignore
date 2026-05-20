@@ -20,3 +20,6 @@ yarn-error.log
 /public/app
 storage/logs/
 environnement
+*.sql
+*.zip
+dmce*.sql
