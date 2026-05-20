@@ -63,6 +63,13 @@ class Demande extends Model
     {
         return $this->belongsToMany(Justificatif::class, 'demandes_pieces', 'demandes_id', 'pieces_id');
     }
+    /**
+ * Agent commanditaire du dossier
+ */
+public function commanditaire(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+{
+    return $this->belongsTo(\App\Models\User::class, 'commanditaire_id');
+}
 
     /**
      * Get the categorieProfessionnelle that owns the Demande

@@ -48,6 +48,7 @@
                                                 <th>Validité</th>
                                                 <th>Statut demande</th>
                                                 <th>Date demande</th>
+                                                <th>Commanditaire</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -68,6 +69,16 @@
                                                     <td>{{$demande->validite}} an(s)</td>
                                                     <td>{{$demande->statut_demande}}</td>
                                                     <td>{{$demande->date_demande}}</td>
+                                                    <td>
+                                                        @if($demande->commanditaire)
+                                                            <span class="badge badge-light border">
+                                                                <i class="la la-user-tie text-info"></i>
+                                                                {{ $demande->commanditaire->name }} {{ $demande->commanditaire->prenom }}
+                                                            </span>
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
 
                                                     <td>
                                                         <div class="btn-group btn-block">
@@ -119,6 +130,7 @@
                                                 <th>Validité</th>
                                                 <th>Statut demande</th>
                                                 <th>Date demande</th>
+                                                <th>Commanditaire</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </tfoot>

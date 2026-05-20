@@ -9,6 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
@@ -81,5 +82,47 @@ class User extends Authenticatable
     {
         return $this->hasMany(FluxMigratoire::class, 'users_id', 'id');
     }
+ /**
+     * Vérifier si l'utilisateur a une permission spécifique
+     */
+    public function hasPermission($permissionKey)
+    {
+        // SuperAdmin a toutes les permissions
+        if ($this->role && $this->role->lib_role === 'SuperAdmin') {
+            return true;
+        }
 
+        // Vérifier si le rôle a cette permission
+        return DB::table('roles_fonctionnalites as rf')
+            ->join('fonctionnalites as f', 'f.id', '=', 'rf.fonctionnalites_id')
+            ->where('rf.roles_id', $this->roles_id)
+            ->where('f.unique_key_string', $permissionKey)
+            ->exists();
+    }
+
+    /**
+     * Vérifier si l'utilisateur a au moins une des permissions
+     */
+    public function hasAnyPermission(array $permissions)
+    {
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Vérifier si l'utilisateur a toutes les permissions
+     */
+    public function hasAllPermissions(array $permissions)
+    {
+        foreach ($permissions as $permission) {
+            if (!$this->hasPermission($permission)) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

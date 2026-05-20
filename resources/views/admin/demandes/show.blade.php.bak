@@ -1,0 +1,1144 @@
+@extends('admin.layouts.app')
+@section('title')
+    Ajouter une demande
+@endsection
+@section('styles')
+    <link rel="stylesheet" href="{{asset('res/app-assets/vendors/css/forms/selects/select2.min.css')}}">
+
+@endsection
+@section('content')
+<div class="app-content content">
+    <div class="content-overlay"></div>
+    <div class="content-wrapper">
+
+        <div class="content-body">
+            <!-- Basic form layout section start -->
+            <section id="horizontal-form-layouts">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-content collpase show">
+                                <div class="card-body">
+
+
+                                        <div class="form-body">
+                                             @if($certificatHebergement)
+                                                <div class="card mt-3 border-info">
+                                                    <div class="card-header bg-info text-white py-2">
+                                                        <strong><i class="la la-building"></i> Certificat d'hébergement</strong>
+                                                    </div>
+                                                    <div class="card-body py-2">
+                                                        <strong>N° {{ $certificatHebergement->numero_certificat }}</strong>
+                                                        — Hébergeur : {{ $certificatHebergement->nom_hebergeur }}
+                                                        <span class="badge badge-{{ $certificatHebergement->statut === 'Validé' ? 'success' : 'warning' }} ml-2">
+                                                            {{ $certificatHebergement->statut }}
+                                                        </span>
+                                                        <a href="{{ route('certificats-hebergement.show', $certificatHebergement->id) }}"
+                                                            class="btn btn-sm btn-outline-info ml-2">
+                                                        <i class="la la-eye"></i> Voir le certificat
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                @endif
+                                            <h4 class="form-section"><i class="ft-user"></i> Information de l'Impétrant | Statut de la demande : <strong>{{ $demande->statut_demande }}</strong> </h4>
+                                            <div class="form-group row">
+    @php
+    use App\Models\Pays;
+
+    $pays = null;
+
+    if ($demande->impetrant && $demande->impetrant->nationalites_id) {
+        $pays = Pays::find($demande->impetrant->nationalites_id);
+    }
+
+    $flagPath = $pays && $pays->code
+        ? 'res/flags/' . strtolower(trim($pays->code)) . '.png'
+        : null;
+
+    // ── Calcul blocage renouvellement ────────────────────────────────────────
+    // On cherche la dernière demande ATTRIBUÉE de cet impétrant (hors demande courante)
+    $derniereDemande    = \App\Models\Demande::where('impetrants_id', $demande->impetrants_id)
+        ->where('id', '!=', $demande->id)
+        ->whereNotNull('date_emission')
+        ->where('attribue', 1)
+        ->orderByDesc('date_emission')
+        ->first();
+
+    $peutRenouveler     = true;
+    $joursEcoules       = null;
+    $joursRestants      = null;
+    $dateEmissionStr    = null;
+    $prochaineDateDispo = null;
+    $progressPct        = 0;
+    $delaiMinJours      = 183; // ~6 mois
+
+    if ($derniereDemande) {
+        $dateEmissionCarbon = \Carbon\Carbon::parse($derniereDemande->date_emission);
+        $maintenant         = \Carbon\Carbon::now('Africa/Brazzaville');
+        $joursEcoules       = (int) $dateEmissionCarbon->diffInDays($maintenant);
+        $dateEmissionStr    = $dateEmissionCarbon->format('d/m/Y');
+        $progressPct        = min(100, (int)(($joursEcoules / $delaiMinJours) * 100));
+
+        if ($joursEcoules < $delaiMinJours) {
+            $peutRenouveler     = false;
+            $joursRestants      = $delaiMinJours - $joursEcoules;
+            $prochaineDateDispo = $dateEmissionCarbon->copy()->addDays($delaiMinJours)->format('d/m/Y');
+        }
+    }
+    @endphp
+
+<div class="col-md-3 d-flex justify-content-center">
+    <div class="d-flex align-items-center">
+
+        <div class="photo-box">
+            <img src="{{ asset('app/'.$demande->photo) }}" alt="Photo de l'impétrant">
+        </div>
+
+        @if($flagPath && file_exists(public_path($flagPath)))
+            <div class="flag-box">
+                <img src="{{ asset($flagPath) }}" alt="Drapeau">
+                <div class="flag-label">
+                    {{ $pays->lib_pays }}
+                </div>
+            </div>
+        @endif
+
+    </div>
+</div>
+
+<style>
+.photo-box {
+    width: 180px;
+    height: 180px;
+    border: 2px solid #e5e5e5;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.photo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.flag-box {
+    margin-left: 20px;
+    padding: 8px 10px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    text-align: center;
+    min-width: 90px;
+}
+
+.flag-box img {
+    width: 64px;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.flag-label {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+}
+
+    /* Animation de la bordure pulsante */
+    @keyframes alertBlink {
+        0% { box-shadow: inset 0 0 50px rgba(220, 53, 69, 0.8), 0 0 20px rgba(220, 53, 69, 0.5); border-color: #dc3545; }
+        100% { box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.8); border-color: #000; }
+    }
+
+    #danger-border {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        border: 15px solid #dc3545;
+        z-index: 9998;
+        pointer-events: none;
+        animation: alertBlink 0.8s infinite alternate;
+    }
+
+    /* Style du Modal façon "Alerte Système" */
+    #securityAlertModal .modal-content {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px solid #dc3545;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    #securityAlertModal .modal-header {
+        background: linear-gradient(45deg, #9d0208, #dc3545);
+        border-bottom: none;
+        letter-spacing: 1px;
+    }
+
+    /* Icône qui pulse */
+    .bounce-icon {
+        animation: pulse-red 1s infinite;
+    }
+
+    @keyframes pulse-red {
+        0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(220, 53, 69, 0.7)); }
+        70% { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(220, 53, 69, 0)); }
+        100% { transform: scale(1); }
+    }
+
+    .fw-black { font-weight: 900; letter-spacing: -1px; }
+
+    /* Liste des critères plus élégante */
+    .matching-list {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .matching-list li {
+        background: rgba(220, 53, 69, 0.05);
+        margin-bottom: 5px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border-left: 3px solid #dc3545;
+        transition: all 0.3s;
+    }
+
+    .matching-list li:hover {
+        background: rgba(220, 53, 69, 0.1);
+        transform: translateX(5px);
+    }
+
+    /* Bouton d'action massif */
+    .btn-confirm {
+        background: #212529;
+        color: white;
+        border: none;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-confirm:hover {
+        background: #000;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        transform: translateY(-2px);
+    }
+
+    /* ── Styles blocage renouvellement ── */
+    .renew-block-badge {
+        display: inline-block;
+        background: #FF4961;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
+        vertical-align: middle;
+    }
+    .renew-progress-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin-top: 4px;
+    }
+    .renew-progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #FF4961, #FF9149);
+    }
+    .renew-ok-info {
+        font-size: 12px;
+        color: #6c757d;
+        text-align: center;
+        margin-top: 4px;
+    }
+
+</style>
+
+                                                <div class="col-md-6 mx-auto">
+                                                        @if ($demande->statut_demande == "En attente d'approbation")
+                                                        <!-- Bouton qui ouvre la confirmation -->
+        @if ($sims->count() < 1 && $demande->statut_demande == "En attente d'approbation")
+<button type="button" class="btn btn-success btn-block mb-1" data-toggle="modal" data-target="#confirmApprovalModal">
+    Approuver
+</button>
+@endif
+<!-- Modal de confirmation -->
+<div class="modal fade" id="confirmApprovalModal" tabindex="-1" role="dialog" aria-labelledby="confirmApprovalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="confirmApprovalLabel">
+                    ⚠️ Confirmation d'approbation
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <p>
+                    Vous êtes sur le point <strong>d'approuver définitivement</strong> cette demande.
+                </p>
+                <p class="text-danger">
+                    Cette action est <strong>irréversible</strong>.
+                </p>
+                <p>
+                    Confirmez-vous cette décision ?
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Annuler
+                </button>
+
+         <form action="{{ route('approuver.simple', $demande->id) }}" method="POST">
+    @csrf
+    <button type="submit" class="btn btn-success">
+        ✅ Confirmer l'approbation
+    </button>
+</form>
+            </div>
+        </div>
+    </div>
+</div>
+
+                                                        <a href="{{route("demandes.create.contentieux",$demande->id)}}" class="btn btn-warning btn-block mb-1">Envoyer au contentieux</a>
+                                                        @endif
+
+                                                      @if ($demande->statut_demande == "Envoyée au contentieux")
+    @php
+        $roleActuel = auth()->user()?->role?->lib_role;
+        $peutApprouverContentieux = in_array($roleActuel, ['SuperAdmin', 'Admin']);
+    @endphp
+
+    @if($peutApprouverContentieux)
+        <form action="{{ route('approuver.simple', $demande->id) }}" method="POST">
+    @csrf
+    <button type="submit" class="btn btn-success btn-block mb-1">
+        <i class="la la-check"></i> Approuver malgré le contentieux
+    </button>
+</form>
+    @else
+        <div class="alert alert-danger text-center mb-1">
+            <i class="la la-lock" style="font-size:1.5rem;"></i>
+            <br>
+            <strong>Approbation restreinte</strong><br>
+            <small>Ce dossier est en contentieux.<br>
+            Seul un <strong>SuperAdmin</strong> ou un <strong>Admin</strong> peut l'approuver.</small>
+        </div>
+    @endif
+@endif
+
+
+                                                        @if ($demande->statut_demande == "Approuvée" && $demande->numero_document == null)
+                                                        <a href="{{ route("demandes.remplirformation",$demande->id) }}" class="btn btn-secondary btn-block mb-1">Renseigner les information de {{ $demande->type_demande }}</a>
+                                                        @endif
+                                                        <table class="table table-bordered">
+                                                            <tr>
+                                                                <td><a href="{{ route("demandes.edit",$demande->id) }}" class="btn btn-primary">Modifier</a></td>
+                                                                <td>
+                                                                    <form action="{{ route('demandes.destroy', $demande->id) }}" method="POST" style="display:inline;">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-danger"
+                                                                            onclick="return confirm('Tu es sûr de vouloir supprimer ?')">
+                                                                            Supprimer
+                                                                        </button>
+                                                                    </form>
+                                                                </td>
+
+
+                                                                @if($demande->fiches->count() > 0)
+                                                                    @if(\Carbon\Carbon::parse($demande->fiches->last()->date_valite_fiche)->gt(\Carbon\Carbon::now()))
+                                                                        <td><a href="{{ route("demandes.fiche",$demande->id) }}" class="btn btn-secondary">Exporter la fiche <i class="la la-folder-open"></i></a></td>
+                                                                    @else
+                                                                        <td>
+                                                                            <form action="{{ route("demandes.renouveler.fiche",$demande->id) }}" method="POST">
+                                                                                @csrf
+                                                                                <button type="submit" class="btn btn-danger">Renouveller la fiche</button>
+                                                                            </form>
+                                                                        </td>
+                                                                    @endif
+                                                                @endif
+                                                            </tr>
+                                                        </table>
+
+                                                        {{-- ══════════════════════════════════════════════════════
+                                                             BOUTON RENOUVELER — Blocage si délai < 6 mois
+                                                             ══════════════════════════════════════════════════════ --}}
+@can('demandes.renew')
+<div class="mb-2">
+    @if ($peutRenouveler)
+
+        {{-- ── Délai OK : bouton actif ─── --}}
+        <a href="{{ route('demandes.renouveler', $demande->impetrants_id) }}"
+           class="btn btn-warning btn-block"
+           onclick="return confirm('Confirmer le renouvellement pour cet impétrant ?')">
+            <i class="la la-redo-alt"></i> Renouveler la demande
+        </a>
+        @if ($derniereDemande)
+            <p class="renew-ok-info">
+                Dernière émission : {{ $dateEmissionStr }}
+                — {{ $joursEcoules }} j écoulés
+                <i class="la la-check-circle text-success"></i>
+            </p>
+        @endif
+
+    @else
+
+        {{-- ── Délai NON atteint : bouton grisé + indicateur ─── --}}
+        <button class="btn btn-secondary btn-block" disabled
+                title="Renouvellement autorisé à partir du {{ $prochaineDateDispo }}">
+            <i class="la la-ban"></i>
+            Renouveler la demande
+            <span class="renew-block-badge ml-1">{{ $joursRestants }} j restants</span>
+        </button>
+
+        {{-- Barre de progression vers les 183 jours --}}
+        <div class="renew-progress-bar"
+             title="{{ $joursEcoules }} j écoulés sur {{ $delaiMinJours }} j requis">
+            <div class="renew-progress-fill" style="width: {{ $progressPct }}%"></div>
+        </div>
+
+        <div class="alert alert-danger py-2 px-3 mt-2 mb-0"
+             style="font-size:13px; border-radius:6px; border-left: 4px solid #FF4961;">
+            <i class="la la-exclamation-circle"></i>
+            <strong>Renouvellement impossible</strong><br>
+            Dernière émission : <strong>{{ $dateEmissionStr }}</strong>
+            ({{ $joursEcoules }} j / {{ $delaiMinJours }} j requis)<br>
+            Prochain renouvellement autorisé le :
+            <strong class="text-danger">{{ $prochaineDateDispo }}</strong>
+        </div>
+
+    @endif
+</div>
+@endcan
+                                                        {{-- ── BOUTON CASIER JUDICIAIRE ── --}}
+<a href="{{ route('impetrants.casier', $demande->impetrants_id) }}"
+   class="btn btn-dark btn-block mb-1"
+   style="border-radius: 8px;">
+    <i class="feather icon-book-open"></i> Voir le casier judiciaire
+</a>
+                                                        @if($demande->createur)
+                                                            <table class="table table-bordered">
+                                                                <tr>
+                                                                    <th>Operateur</th>
+                                                                    <td>
+                                                                        <a href="{{ route('users.show', $demande->createur->id) }}" style="color: black; text-decoration: none;" onmouseover="this.style.color='blue'" onmouseout="this.style.color='black'">
+                                                                            {{$demande->createur->getNomPrenom()}}
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        @endif
+                                                        {{-- ── AGENT COMMANDITAIRE ── --}}
+@if($demande->commanditaire)
+    <table class="table table-bordered mt-2">
+        <tr>
+            <th><i class="la la-user-tie"></i> Agent commanditaire</th>
+            <td>
+                <a href="{{ route('users.show', $demande->commanditaire->id) }}"
+                   style="color: black; text-decoration: none;"
+                   onmouseover="this.style.color='blue'"
+                   onmouseout="this.style.color='black'">
+                    {{ $demande->commanditaire->grade ? '[' . $demande->commanditaire->grade . '] ' : '' }}
+                    {{ $demande->commanditaire->name }} {{ $demande->commanditaire->prenom }}
+                </a>
+            </td>
+        </tr>
+    </table>
+@endif
+                                                        @if ($demande->numero_document != "")
+    <table class="table table-bordered">
+        <tr>
+            <th>Numéro du document</th>
+            <td>{{ $demande->numero_document }}</td>
+        </tr>
+        <tr>
+            <th>Date émission</th>
+            <td>{{ date("d/m/Y", strtotime($demande->date_emission)) }}</td>
+        </tr>
+        <tr>
+            <th>Date d'expiration</th>
+            <td>{{ date("d/m/Y", strtotime($demande->date_expiration)) }}</td>
+        </tr>
+    </table>
+
+    {{-- Boutons Modifier / Réinitialiser --}}
+    <div class="d-flex gap-2 mb-2">
+        <a href="{{ route('demandes.remplirformation', $demande->id) }}"
+           class="btn btn-warning btn-block mb-1">
+            <i class="la la-edit"></i> Modifier le document
+        </a>
+        <button type="button" class="btn btn-danger btn-block mb-1"
+                data-toggle="modal" data-target="#resetDocModal">
+            <i class="la la-undo"></i> Réinitialiser le document
+        </button>
+    </div>
+
+    {{-- Modal confirmation réinitialisation --}}
+    <div class="modal fade" id="resetDocModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">⚠️ Réinitialiser le document</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Vous êtes sur le point de <strong>supprimer le numéro de document, les dates d'émission et d'expiration</strong> de cette demande.</p>
+                    <p class="text-danger"><strong>Cette action remettra la demande en attente d'attribution.</strong></p>
+                    <p>Confirmez-vous ?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <form action="{{ route('demandes.reset-document', $demande->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="la la-undo"></i> Confirmer la réinitialisation
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+                                                       @if ($sims->count() > 0)
+                                                        <div class="alert alert-danger">
+        ⚠️ {{ $sims->count() }} similarité(s) pertinente(s) détectée(s).
+    </div>
+  
+    <p>
+        <a class="btn btn-warning btn-sm"
+           href="{{ route('demandes.similarities', $demande->id) }}">
+            🔍 Voir les similarités
+        </a>
+    </p>
+@else
+
+
+   
+@endif
+
+                                                        @if ($demande->contentieux->count() > 0)
+                                                            <div class="card mt-4 border-danger">
+                                                                <div class="card-header bg-danger text-white">
+                                                                    <strong>Contentieux associé(s) a cette demande</strong>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    @foreach ($demande->contentieux as $contentieux)
+                                                                        <div class="mb-3 p-3 border rounded shadow-sm bg-light">
+                                                                            <h5 class="text-danger mb-2">Motif : {{ $contentieux->motif->lib_motif ?? 'Motif non défini' }}</h5>
+                                                                            <p class="mb-1"><strong>Description :</strong> {{ $contentieux->description ?? 'Aucune description fournie' }}</p>
+                                                                            <small class="text-muted">Ajouté le : {{ \Carbon\Carbon::parse($contentieux->created_at)->format('d/m/Y - H:i') }}</small>
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            </div>
+                                                        @endif
+
+                                                </div>
+                                            </div>
+                                            @if($demande?->soit_transmis_id != "" || $demande?->soit_transmis_id != null)
+                                                <div class="form-group row">
+                                                    <label class="col-md-3 label-control" for="nom">Numéro soit-transmis </label>
+                                                    <div class="col-md-9 mx-auto">
+                                                        <a  href="{{route('soit-transmis.show',$demande?->soitTransmis->id)}}" class="">{{$demande?->soitTransmis->numero}} <i class="la la-folder-open"></i></a>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nom">Nom *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="nom" class="form-control @error('nom') is-invalid @enderror" placeholder="Nom" value="{{$demande->impetrant?->nom}}" name="nom" disabled>
+
+                                                </div>
+
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="prenom">Prénom *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="prenom" class="form-control @error('prenom') is-invalid @enderror" placeholder="Prénom" value="{{$demande->impetrant?->prenom}}" name="prenom" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="sexe">Sexe *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select  id="sexe" class="form-control @error('sexe') is-invalid @enderror"  name="sexe" disabled>
+                                                        <option value="Masculin" {{"Masculin"==$demande->impetrant?->sexe ? "selected":""}}>Masculin</option>
+                                                        <option value="Féminin" {{"Féminin"==$demande->impetrant?->sexe ? "selected":""}}>Féminin</option>
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_naissance">Date de naissance *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" id="date_naissance" class="form-control @error('date_naissance') is-invalid @enderror"  value="{{$demande->impetrant?->date_naissance}}" name="date_naissance" disabled>
+
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="lieu_naissance">Lieu de naissance *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="lieu_naissance" class="form-control @error('lieu_naissance') is-invalid @enderror"  value="{{$demande->impetrant?->lieu_naissance}}" name="lieu_naissance" placeholder="Lieu de naissance" disabled>
+
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="etat_civil">Etat civil *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select class="select2-theme form-control" id="select2-theme" name="etat_civil">
+
+                                                        @forelse ($etatsCivils as $etatsCivil)
+                                                                <option value="{{$etatsCivil}}" {{$etatsCivil==$demande->etat_civil ? "selected":""}}>{{ $etatsCivil}}</option>
+                                                        @empty
+
+                                                        @endforelse
+
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nationalites_id">Nationalité(s) *</label>
+                                                <div class="col-md-9 mx-auto">
+@php
+
+    $badgeNationalite = null;
+
+    if ($demande->impetrant && $demande->impetrant->nationalites_id) {
+        $paysNat = Pays::find($demande->impetrant->nationalites_id);
+
+        if ($paysNat) {
+            $badgeNationalite = $paysNat->nationalite ?: $paysNat->lib_pays;
+        }
+    }
+@endphp
+
+@if($badgeNationalite)
+    <span class="badge badge-primary">{{ $badgeNationalite }}</span>
+@endif
+
+
+                                                </div>
+                                            </div>
+                                            <h4 class="form-section"><i class="ft-home"></i> Information de contact</h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="departements_id">Département *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select class="select2-theme form-control" id="departements_id" name="departements_id" disabled>
+                                                                <option value="">Selectionner</option>
+                                                        @forelse ($departements as $d)
+                                                                <option value="{{$d->id}}" {{ $d->id==$demande->quartier?->arrondissement?->departement?->id ? "selected":"" }}>{{ $d->lib_departement }}</option>
+                                                        @empty
+
+                                                        @endforelse
+
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="arrondissements_id">Arrondissement / Commune *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select  id="arrondissements_id" class="form-control @error('arrondissements_id') is-invalid @enderror"  name="arrondissements_id" disabled>
+                                                        <option value="{{$demande->quartier?->arrondissement?->id}}">{{ $demande->quartier?->arrondissement?->lib_arrondissement }}</option>
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="quartiers_id">Quartier / Village *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select  id="quartiers_id" class="form-control @error('quartiers_id') is-invalid @enderror"  name="quartiers_id" disabled>
+                                                        <option value="{{$demande->quartier?->id}}">{{ $demande->quartier?->lib_quartier }}</option>
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="avenue_rue">Avenue / Rue *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="avenue_rue" class="form-control @error('avenue_rue') is-invalid @enderror"  value="{{$demande->avenue_rue}}" name="avenue_rue" placeholder="Avenue / rue" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="numero_adresse">Numéro domicile *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="numero_adresse" class="form-control @error('numero_adresse') is-invalid @enderror"  value="{{$demande->numero_adresse}}" name="numero_adresse" placeholder="Numéro" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="telephone">Numéro de téléphone *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="telephone" class="form-control @error('telephone') is-invalid @enderror"  value="{{$demande->telephone}}" name="telephone" placeholder="Numéro de téléphone" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="email">Email *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="email" class="form-control @error('email') is-invalid @enderror"  value="{{$demande->email}}" name="email" placeholder="Email" disabled>
+
+                                                </div>
+                                            </div>
+                                            {{-- Information des parents --}}
+                                            <h4 class="form-section"><i class="ft-users"></i> Information des parents</h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nom_pere">Nom père *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="nom_pere" class="form-control @error('nom_pere') is-invalid @enderror"  value="{{$demande->impetrant?->nom_pere}}" name="nom_pere" placeholder="Nom du père" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="prenom_pere">Prénom père *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="prenom_pere" class="form-control @error('prenom_pere') is-invalid @enderror"  value="{{$demande->impetrant?->prenom_pere}}" name="prenom_pere" placeholder="Prénom du père" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nom_mere">Nom de la mère *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="nom_mere" class="form-control @error('nom_mere') is-invalid @enderror"  value="{{$demande->impetrant?->nom_mere}}" name="nom_mere" placeholder="Nom de la mère" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="prenom_mere">Prénom mère *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="prenom_mere" class="form-control @error('prenom_mere') is-invalid @enderror"  value="{{$demande->impetrant?->prenom_mere}}" name="prenom_mere" placeholder="Prénom du mère" disabled>
+
+                                                </div>
+                                            </div>
+                                            {{-- Information de l'employeur --}}
+                                            <h4 class="form-section"><i class="ft-users"></i> Information de la profession</h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3" for="categorie_socioprofessionnelle_id">Catégorie socio-professionelle *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select id="categorie_socioprofessionnelle_id" class="form-control @error('categorie_socioprofessionnelle_id') is-invalid @enderror"  name="categorie_socioprofessionnelle_id"  disabled>
+                                                        @forelse ($categories as $item)
+                                                            <option value="{{$item->id}}" {{$item->id==$demande->categorie_socioprof_id ? "selected":""}}>{{ $item->categorie }}</option>
+                                                        @empty
+
+                                                        @endforelse
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="profession">Profession *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="profession" class="form-control @error('profession') is-invalid @enderror"  value="{{$demande->profession}}" name="profession" placeholder="Votre profession" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="employeur">Nom de l'Employeur </label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="employeur" class="form-control @error('employeur') is-invalid @enderror"  value="{{$demande->employeur?->nom_employeur}}" name="employeur" placeholder="Nom de l'employeur" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="adresse_employeur">Adresse de l'Employeur </label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="adresse_employeur" class="form-control @error('adresse_employeur') is-invalid @enderror"  value="{{$demande->employeur?->adresse_physique}}" name="adresse_employeur" placeholder="Adresse de l'employeur" disabled>
+
+                                                </div>
+                                            </div>
+                                            <h4 class="form-section"><i class="ft-file"></i> Information du passeport </h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="numero_passeport">Numéro du passeport *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="numero_passeport" class="form-control @error('numero_passeport') is-invalid @enderror"  value="{{$demande->passeport()?->numero_document}}" name="numero_passeport" placeholder="Numéro du passeport" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_emission_passeport">Date d'émission *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" id="date_emission_passeport" class="form-control @error('date_emission_passeport') is-invalid @enderror"  value="{{$demande->passeport()?->date_emission}}" name="date_emission_passeport" placeholder="Date émission du passeport" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_expiration_passeport">Date d'expiration*</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" id="date_expiration_passeport" class="form-control @error('date_expiration_passeport') is-invalid @enderror"  value="{{$demande->passeport()?->date_expiration}}" name="date_expiration_passeport" placeholder="Date d'expiration du passeport" disabled>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="passeport_delivre_par">Délivré par*</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="passeport_delivre_par" class="form-control @error('passeport_delivre_par') is-invalid @enderror"  value="{{$demande->passeport()?->emis_par}}" name="passeport_delivre_par" placeholder="Délivré par" disabled>
+
+                                                </div>
+                                            </div>
+                                            {{-- Section demande --}}
+                                            <h4 class="form-section"><i class="ft-file"></i> Information sur la demande</h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="type_demande">Type demande *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select name="type_demande" id="type_demande" class="form-control @error('type_demande') is-invalid @enderror" disabled>
+                                                        <option value="">Selectionner</option>
+                                                        <option value="Carte de résident temporaire" {{"Carte de résident temporaire"==$demande->type_demande ? "selected":""}}>Carte de résident temporaire</option>
+                                                        <option value="Visa" {{"Visa"==$demande->type_demande ? "selected":""}}>Visa</option>
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="validite">Validité *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select name="validite" id="validite" class="form-control @error('validite') is-invalid @enderror" disabled>
+                                                        <option value="">Selectionner</option>
+                                                        @forelse ($validites as $validite)
+                                                            <option value="{{$validite}}" {{ $validite==$demande->validite ? "selected":"" }}>{{$validite}}</option>
+                                                        @empty
+
+                                                        @endforelse
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_demande">Date de la demande *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" name="date_demande" id="date_demande" class="form-control @error('date_demande') is-invalid @enderror" value="{{$demande->date_demande}}" disabled>
+
+
+                                                </div>
+                                            </div>
+
+                                        <div class="form-actions">
+                                            <a href="{{route('demandes.index')}}" class="btn btn-warning">Retour</a>
+                                        </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- // Basic form layout section end -->
+        </div>
+    </div>
+</div>
+<!-- END: Content-->
+<div class="modal fade" id="postCreateModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Dossier enregistré</h5>
+      </div>
+
+      <div class="modal-body text-center">
+        <p class="mb-3">
+          Le dossier a été enregistré avec succès.
+        </p>
+        <p>
+          Que souhaitez-vous faire ?
+        </p>
+      </div>
+
+      <div class="modal-footer justify-content-center">
+        <a href="{{ route('demandes.create') }}" 
+           class="btn btn-outline-primary">
+           ➕ Nouveau dossier
+        </a>
+
+        <button type="button" 
+                class="btn btn-success" 
+                data-dismiss="modal">
+           📂 Traiter ce dossier
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+@if(session('contentieux_danger'))
+
+{{-- BORDURE ROUGE CLIGNOTANTE --}}
+<div id="ctx-danger-border" style="
+    position: fixed; top:0; left:0;
+    width:100vw; height:100vh;
+    border: 18px solid #dc3545;
+    z-index: 9998;
+    pointer-events: none;
+    animation: ctxBlink 0.7s infinite alternate;
+"></div>
+
+{{-- SON D'ALERTE SOS --}}
+<audio id="ctx-alert-sound" loop preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    <source src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" type="audio/mpeg">
+</audio>
+
+{{-- MODAL ALERTE CONTENTIEUX --}}
+<div class="modal fade show" id="ctxAlertModal" tabindex="-1"
+     style="display:block; background:rgba(0,0,0,0.88); z-index:9999;" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg shadow-lg">
+        <div class="modal-content border-0" style="border-radius:16px; overflow:hidden;">
+
+            {{-- HEADER --}}
+            <div class="modal-header py-3" style="background:linear-gradient(45deg,#7f0000,#dc3545);">
+                <h4 class="modal-title text-white font-weight-black w-100 text-center">
+                    <i class="la la-exclamation-triangle" style="animation:ctxBounce .5s infinite alternate; display:inline-block;"></i>
+                    &nbsp; APPROBATION BLOQUÉE — CONTENTIEUX DÉTECTÉ
+                </h4>
+            </div>
+
+            {{-- BODY --}}
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <i class="la la-ban text-danger" style="font-size:5rem;"></i>
+                </div>
+
+                <h3 class="text-danger font-weight-black mb-2">CET IMPÉTRANT A UN DOSSIER EN CONTENTIEUX</h3>
+                <p class="lead text-dark mb-3">
+                    Vous ne pouvez pas approuver cette demande.<br>
+                    L'impétrant <strong>{{ $demande->impetrant?->nom }} {{ $demande->impetrant?->prenom }}</strong>
+                    possède un ou plusieurs dossiers actifs au contentieux.
+                </p>
+
+                {{-- LISTE DES CONTENTIEUX --}}
+                <div class="text-left p-3 rounded mb-4" style="background:#fff5f5; border-left:4px solid #dc3545;">
+                    <small class="text-uppercase font-weight-bold text-danger d-block mb-2">
+                        Dossiers en contentieux :
+                    </small>
+                    <ul class="list-unstyled mb-0">
+                        @foreach(session('contentieux_details', []) as $detail)
+                        <li class="py-2 px-3 mb-1 rounded d-flex align-items-center"
+                            style="background:rgba(220,53,69,0.07); border-left:3px solid #dc3545;">
+                            <i class="la la-gavel text-danger mr-2"></i>
+                            <span class="font-weight-bold">{{ $detail }}</span>
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
+
+                {{-- LIENS VERS LES DOSSIERS --}}
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                    @foreach(session('contentieux_demandes', []) as $ctxDemande)
+                    <a href="{{ route('demandes.show', $ctxDemande['id']) }}"
+                       class="btn btn-outline-danger btn-sm"
+                       target="_blank">
+                        <i class="la la-external-link-alt"></i>
+                        Voir dossier N°{{ $ctxDemande['uuid'] }}
+                    </a>
+                    @endforeach
+                </div>
+
+                <button type="button" class="btn btn-dark btn-lg px-5 font-weight-bold"
+                        onclick="dismissCtxAlert()">
+                    <i class="la la-check"></i> J'ai pris connaissance — Fermer
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes ctxBlink {
+    from { opacity:1; border-color:#dc3545; box-shadow: inset 0 0 60px rgba(220,53,69,0.3); }
+    to   { opacity:0.4; border-color:#7f0000; box-shadow: inset 0 0 0px rgba(0,0,0,0); }
+}
+@keyframes ctxBounce {
+    from { transform: translateY(0) scale(1); }
+    to   { transform: translateY(-6px) scale(1.1); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Jouer le son
+    var audio = document.getElementById('ctx-alert-sound');
+    var play  = audio.play();
+    if (play !== undefined) {
+        play.catch(() => {
+            document.addEventListener('click', () => audio.play(), { once: true });
+        });
+    }
+    // Bloquer le scroll
+    document.body.style.overflow = 'hidden';
+});
+
+function dismissCtxAlert() {
+    // Arrêter le son
+    document.getElementById('ctx-alert-sound').pause();
+    // Supprimer la bordure
+    document.getElementById('ctx-danger-border').style.display = 'none';
+    // Fermer le modal
+    document.getElementById('ctxAlertModal').style.display = 'none';
+    // Rétablir le scroll
+    document.body.style.overflow = '';
+}
+</script>
+
+@endif
+@if(session('just_created'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Règle : Si PAS d'alerte, on affiche le modal de nouveau dossier immédiatement
+            @if(!session('watchlist_danger'))
+                $('#postCreateModal').modal({
+                    backdrop: 'static',
+                    keyboard: false
+                });
+            @endif
+        });
+
+        // Fonction pour fermer l'alerte et ENCHAÎNER sur le modal de nouveau dossier
+        function dismissSecurityAlert() {
+            // 1. Masquer les éléments d'alerte
+            document.getElementById('danger-border').style.display = 'none';
+            document.getElementById('securityAlertModal').style.display = 'none';
+            
+            // 2. Arrêter le son
+            var audio = document.getElementById('alert-sound');
+            if(audio) audio.pause();
+            
+            // 3. Afficher ENFIN le modal pour choisir de faire un nouveau dossier
+            $('#postCreateModal').modal({
+                backdrop: 'static',
+                keyboard: false
+            });
+        }
+    </script>
+
+    @if(session('watchlist_danger'))
+        <div id="danger-border" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: 20px solid #dc3545; z-index: 9998; pointer-events: none; animation: alertBlink 0.6s infinite alternate;"></div>
+
+        <div class="modal fade show" id="securityAlertModal" tabindex="-1" style="display: block; background: rgba(0,0,0,0.85); z-index: 9999;" role="dialog">
+            <div class="modal-dialog modal-dialog-centered shadow-lg">
+                <div class="modal-content border-0">
+                    <div class="modal-header bg-danger text-white py-3">
+                        <h5 class="modal-title fw-bold">
+                            <i class="fas fa-exclamation-triangle bounce-icon me-2"></i> 
+                            ALERTE DE SÉCURITÉ : WATCHLIST
+                        </h5>
+                    </div>
+                    <div class="modal-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-user-secret text-danger" style="font-size: 4.5rem;"></i>
+                        </div>
+                        <h2 class="text-danger fw-black">INDIVIDU SUSPECT</h2>
+                        <p class="lead fw-bold">Une correspondance a été détectée lors du profilage.</p>
+                        
+                      <div class="text-start p-3 rounded mb-3">
+    <small class="text-uppercase fw-bold text-danger d-block mb-2">Analyse des correspondances :</small>
+    <ul class="matching-list small fw-bold text-dark">
+        @foreach(session('matching_details', []) as $detail)
+            <li><i class="fas fa-fingerprint me-2 text-danger"></i> {{ $detail }}</li>
+        @endforeach
+    </ul>
+</div>
+
+<button type="button" class="btn btn-confirm w-100 py-3 fw-bold mt-2" onclick="dismissSecurityAlert()">
+    <i class="fas fa-user-check me-2"></i> Accuser réception du signalement
+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <audio id="alert-sound" loop preload="auto">
+            <source src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" type="audio/mpeg">
+        </audio>
+
+        <style>
+            @keyframes alertBlink {
+                from { opacity: 1; border-color: #ff0000; }
+                to { opacity: 0.3; border-color: #000; }
+            }
+            .bounce-icon { animation: bounce 0.5s infinite alternate; }
+            @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+            .fw-black { font-weight: 900; }
+        </style>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var audio = document.getElementById('alert-sound');
+                var playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        document.addEventListener('click', () => { audio.play(); }, { once: true });
+                    });
+                }
+            });
+        </script>
+    @endif
+@endif
+
+@section('scripts')
+<script src="{{asset('res/app-assets/vendors/js/forms/select/select2.full.min.js')}}"></script>
+<script src="{{asset('res/app-assets/js/scripts/forms/select/form-select2.min.js')}}"></script>
+<script>
+    $(function(){
+
+        $("#departements_id").on("change",function(){
+            var id = $(this).val();
+            if(id != ""){
+                arrondissements(id,"#arrondissements_id");
+            }
+            return false;
+        });
+
+        $("#arrondissements_id").on("change",function(){
+            var id = $(this).val();
+            if(id != ""){
+                quartiers(id,"#quartiers_id");
+            }
+            return false;
+        });
+
+    });
+
+    function arrondissements(id,div){
+        var route = "{{route("departements.arrondissements",'id')}}";
+        var out = "<option value=''>Selectionner</option>"
+        route = route.replace("id",id);
+        $.get(route,function(data){
+            if(data.length > 0){
+                for(var i=0; i < data.length; i++){
+                    out += "<option value="+data[i].id+">"+data[i].lib_arrondissement+"</option>";
+                }
+                $(div).empty().append(out);
+            }
+        });
+    }
+
+    function quartiers(id,div){
+        var route = "{{route("arrondissements.quartiers",'id')}}";
+        var out = "<option value=''>Selectionner</option>"
+        route = route.replace("id",id);
+        $.get(route,function(data){
+            if(data.length > 0){
+                for(var i=0; i < data.length; i++){
+                    out += "<option value="+data[i].id+">"+data[i].lib_quartier+"</option>";
+                }
+                $(div).empty().append(out);
+            }
+        });
+    }
+</script>
+@endsection

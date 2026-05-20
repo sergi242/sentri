@@ -23,7 +23,7 @@
                                 <div class="card-body">
                                     <img src="{{asset('img/passeport.png')}}" alt="">
                                         <h3>Recherche par type de document</h3>
-                                        <form action="{{ route("search.type.docs") }}" class="form" method="GET">
+                                        <form action="{{ route("recherche.type.docs") }}" class="form" method="GET">
                                             <div class="form-group">
                                                 <label for="">Type de document</label>
                                                 <select name="type" id="tye" class="form-control">
@@ -52,7 +52,7 @@
                                 <div class="card-body">
                                     <img src="{{asset('img/ididentite.png')}}" alt="">
                                     <h3>Recherche par indentité de l'impétrant</h3>
-                                    <form action="{{ route("search.impetrant") }}" class="form" method="GET">
+                                    <form action="{{ route("recherche.impetrant") }}" class="form" method="GET">
                                        <div class="row form-group">
                                         <div class="col-md-6">
                                             <label for="numero_passeport">Nom</label>

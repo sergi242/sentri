@@ -14,15 +14,23 @@
         <table cellspacing="3" id="nav_2">
             <tr >
                 <td style="width:3%;">
-                    <img class="armoiri" src="{{asset('img/armoi_2.png')}}" id="carte" alt="">
-                </td>
+    <img class="armoiri" 
+         src="{{ public_path('img/armoi_2.png') }}" 
+         id="carte" 
+         alt="">
+</td>
+
                 <td style="">
                         <h3 class="nomarge tb">DEMANDE DE DELIVRANCE</h3>
                         <h3 class="nomarge tb">DE CARTE DE RESIDENT</h3>
                 </td>
-                <td style="width:3%;  margin-left: 100%;">
-                    <img class="armoiri_2" src="{{asset('img/congo_2.png')}}" id="carte" alt="">
-                </td>
+                <td style="width:3%;">
+    <img class="armoiri_2"
+         src="{{ public_path('img/congo_2.png') }}"
+         id="carte"
+         alt="">
+</td>
+
                 <td style="width:auto;" colspan="1">
                     <h4 class="nomarge center tb">REPUBLIQUE DU CONGO</h4>
                     <h6 class="nomarge center tb">Unité * Travail * Progrès</h6>
@@ -56,9 +64,12 @@
                                     <tbody>
                                         <tr>
                                             <td>
-                                                <div style="position: relative; ">
-                                                    <img style="width: 100px; " src="{{ asset('app/'.$demande->photo) }}" alt="">
-                                                </div>
+                                               <div style="position: relative;">
+    <img style="width: 100px;"
+         src="{{ public_path('app/'.$demande->photo) }}"
+         alt="">
+</div>
+
                                             </td>
                                         </tr>
                                     </tbody>
@@ -200,21 +211,24 @@
                             <td>
                                 <table>
                                     <tbody>
+                                        @php
+$unchecked = public_path('img/unchecked.png');
+@endphp
                                         <tr>
-                                            <td>
-                                                <img src="{{asset('img/unchecked.png')}}" alt=""> Première demande (Je n'ai pas encore de titre de séjour)
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <img src="{{asset('img/unchecked.png')}}" alt=""> 2em titre de séjour (Je suis autorisé à avoir un deuxième titre de séjour)
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <img src="{{asset('img/unchecked.png')}}" alt=""> Renouvellement de titre de séjour (Mon titre de séjour est perdu, à refaire ou expiré)
-                                            </td>
-                                        </tr>
+    <td>
+        <img src="{{ $unchecked }}" alt=""> Première demande (Je n'ai pas encore de titre de séjour)
+    </td>
+</tr>
+<tr>
+    <td>
+        <img src="{{ $unchecked }}" alt=""> 2em titre de séjour (Je suis autorisé à avoir un deuxième titre de séjour)
+    </td>
+</tr>
+<tr>
+    <td>
+        <img src="{{ $unchecked }}" alt=""> Renouvellement de titre de séjour (Mon titre de séjour est perdu, à refaire ou expiré)
+    </td>
+</tr>
                                     </tbody>
                                 </table>
                             </td>
@@ -357,20 +371,33 @@
                         </tr>
                     </tbody>
                 </table>
-                {{-- Cachet du directeur --}}
-                <div style="position: absolute; top: 103%; left: 70%; width: 2%; height: 0; z-index: 0; pointer-events: none; margin: 0">
-                     <img src="assets/fiche/cachet_rond.png" alt="" style="width: 150px;">
-                </div>
+                @php
+$cachetRond = public_path('img/crt/cachet_rond.png');
+$signature = public_path('img/crt/signature.png');
+$cachetNom = public_path('img/crt/cachet_nominatif.png');
+@endphp
 
-                {{-- Signature --}}
-                <div style="position: absolute; top: 110%; left: 60%; width: 2%; height: 0; z-index: 0; pointer-events: none; margin: 0">
-                    <img src="assets/fiche/signature.png" alt="" style="width: 150px;">
-                </div>
+{{-- Cachet du directeur --}}
+<div style="position: absolute; top: 103%; left: 70%;">
+    @if(file_exists($cachetRond))
+        <img src="{{ $cachetRond }}" style="width:150px;">
+    @endif
+</div>
 
-               {{-- Cachet date --}}
-                <div style="position: absolute; top: 116%; left: 50%; width: 2%; height: 0; z-index: 0; pointer-events: none; margin: 0">
-                    <img src="assets/fiche/cachet_nominatif.png" alt="" style="width: 150px;">
-                </div>
+{{-- Signature --}}
+<div style="position: absolute; top: 110%; left: 60%;">
+    @if(file_exists($signature))
+        <img src="{{ $signature }}" style="width:150px;">
+    @endif
+</div>
+
+{{-- Cachet date --}}
+<div style="position: absolute; top: 116%; left: 50%;">
+    @if(file_exists($cachetNom))
+        <img src="{{ $cachetNom }}" style="width:150px;">
+    @endif
+</div>
+
               </div>
           </div>
 

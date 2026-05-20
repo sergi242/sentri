@@ -27,7 +27,7 @@
                             <h4 class="card-title">
                                 <strong>Soit-Transmis :</strong> {{$soit_transmis->numero}}
                                 |
-                                <strong>Signataire : </strong> {{$soit_transmis->users->prenom}}&nbsp;{{$soit_transmis->users->nom}}
+                                <strong>Signataire : </strong> {{$soit_transmis->user->prenom}}&nbsp;{{$soit_transmis->user->nom}}
                                 | 
                                 <strong>Nombre de demandes :</strong> {{$soit_transmis->demandes_count}}
                             </h4>

@@ -27,8 +27,12 @@
                                             <div class="form-group row">
                                                 <label class="col-md-3 label-control" for="numero_document">Numéro du document *</label>
                                                 <div class="col-md-9 mx-auto">
-                                                    <input type="text" id="numero_document" class="form-control @error('numero_document') is-invalid @enderror" name="numero_document" required>
-
+                                                    <input type="text" 
+       id="numero_document" 
+       class="form-control @error('numero_document') is-invalid @enderror" 
+       name="numero_document" 
+       value="{{ old('numero_document', str_pad((intval(substr($demande->uuid, 0, -1)) - 1), 7, '0', STR_PAD_LEFT) ) }}"
+       required>
                                                         @error('numero_document')
                                                         <div class="invalid-feedback">
                                                                 {{$message}}

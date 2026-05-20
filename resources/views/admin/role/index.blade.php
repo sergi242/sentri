@@ -83,13 +83,19 @@
                                                                     <button type="button" class="btn btn-dark btn-sm dropdown-toggle dropdown-toggle-split" id="dropdownMenuReference1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-reference="parent">
                                                                     </button>
                                                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuReference1">
-
-
-                                                                      <a class="dropdown-item" href="{{route('role.edit',$role->id)}}">Modifier</a>
-
-                                                                      <a class="dropdown-item a-del" href="{{route('role.destroy',$role->id)}}">Supprimer</a>
-
-                                                                    </div>
+    <a class="dropdown-item" href="{{route('role.edit', $role->id)}}">
+        <i class="la la-edit"></i> Modifier
+    </a>
+    
+    <!-- NOUVEAU : Bouton pour gérer les permissions -->
+    <a class="dropdown-item" href="{{route('role.edit', $role->id)}}">
+        <i class="la la-key"></i> Gérer les permissions
+    </a>
+    
+    <a class="dropdown-item a-del" href="{{route('role.destroy', $role->id)}}">
+        <i class="la la-trash"></i> Supprimer
+    </a>
+</div>
                                                                  </div>
                                                             </td>
                                                         </tr>

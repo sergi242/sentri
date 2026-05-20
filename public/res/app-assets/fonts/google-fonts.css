@@ -1,0 +1,4 @@
+/* Open Sans + Quicksand - local */
+/* Fallback défini dans le layout si les fichiers woff2 ne sont pas disponibles */
+/* Les polices système sont utilisées à la place */
+body { font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }

@@ -25,11 +25,12 @@
                                             <div class="form-group row">
                                                 <label class="col-md-3 label-control" for="search_type">Type de document *</label>
                                                 <div class="col-md-9 mx-auto">
-                                                    <select  id="search_type" class="form-control @error('search_type') is-invalid @enderror" name="search_type">
+                                                    <select  id="search_type" class="form-control @error('search_type') is-invalid @enderror" name="search_type" required>
                                                             <option value="">Selectionner</option>
                                                             <option value="CRT">Carte de résident temporaire</option>
                                                             <option value="VISA">Visa</option>
                                                             <option value="PASSEPORT">Passeport</option>
+                                                            <option value="NUM_FICHE">Numero Fiche</option>
                                                     </select>
                                                     @error('search_type')
                                                         <div class="invalid-feedback">
@@ -58,6 +59,7 @@
                                     @if ($results->count() > 0)
                                         <table class="table table-hovered table-stripped">
                                             <tr>
+                                                <th>Photo</th>
                                                 <th>Nom</th>
                                                 <th>Prénom</th>
                                                 <th>Sexe</th>
@@ -68,6 +70,20 @@
 
                                                 @forelse ($results as $res)
                                                 <tr>
+                                                    <td class="text-center">
+    @php
+        $photo = $res->demande?->photo ?? $res->photo;
+    @endphp
+
+    @if($photo)
+        <img src="{{ asset('app/' . $photo) }}"
+             alt="Photo"
+             style="width:60px; height:70px; object-fit:cover; border-radius:4px; border:1px solid #ccc;">
+    @else
+        <span class="text-muted">—</span>
+    @endif
+</td>
+
                                                     <td>{{ $res->demande?->impetrant?->nom ?? $res->impetrant?->nom }}</td>
                                                     <td>{{ $res->demande?->impetrant?->prenom ?? $res->impetrant?->prenom }}</td>
                                                     <td>{{ $res->demande?->impetrant?->sexe ?? $res->impetrant?->sexe }}</td>
@@ -149,3 +165,9 @@
     }
 </script>
 @endsection
+<style>
+.table td, .table th {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+</style>

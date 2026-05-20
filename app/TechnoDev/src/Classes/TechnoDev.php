@@ -9,124 +9,273 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\User;
 
-class TechnoDev{
-
-    public function impetrantUniqueString(Impetrant $impetrant){
-        $str = $impetrant->nom;
-        $str .= $impetrant->prenom;
-        $str .= $impetrant->sexe;
-        $str .= $impetrant->date_naissance;
-        // $str .= $impetrant->lieu_naissance;
-        $str .= $impetrant->nationalites_id;
-        // $str .= $impetrant->nom_pere;
-        // $str .= $impetrant->prenom_pere;
-        // $str .= $impetrant->nom_mere;
-        // $str .= $impetrant->prenom_mere;
-        return Str::upper($str);
-    }
-
-    public function tauxSimilarity($s1,$s2){
-        $distance = levenshtein($s1, $s2);
-        $similarity1 = 100 - ($distance / max(strlen($s1), strlen($s2))) * 100;
-        return $similarity1;
-    }
-
-    public function demandeUuid(User $user){
-        // 005_18062023_0000000001
-        $userseq = self::strpad($user->id,3);
-        $demande = Demande::orderBy("created_at","desc")->where("created_by",$user->id)->first();
-        $demandeNumber = 1;
-        if($demande == null){
-            $demandeNumber = 1;
-            $str_uuid = $userseq."_".date("dmY")."_".self::strpad($demandeNumber,10);
-            return $str_uuid;
-        }else{
-            $uuid = $demande->uuid;
-            $demandeNumber = (int) substr($uuid,13);
-            $str_uuid = $userseq."_".date("dmY")."_".self::strpad($demandeNumber,10);
-            return $str_uuid;
-        }
-    }
-
-    public function strpad($value,$zeros){
-        return is_int($value) && is_int($zeros) ? str_pad($value,$zeros,"0",STR_PAD_LEFT):0;
-    }
-
-    public function joinFluxData(int $pays_id, int $frontieres_id, string $from, string $to){
-        $data = DB::select("select pays_id,frontieres_id, sum(total_entree) as tentree, sum(total_sortie) as tsortie from flux_migratoires where pays_id=? and frontieres_id=? and date(date_movement) between ? and ? ",
-            [$pays_id,$frontieres_id,$from,$to]);
-
-            return collect($data)->first();
-    }
-
-    public function timespan($inputtime)
+class TechnoDev
+{
+    /* ==========================================================
+     |  IDENTITÉ UNIQUE IMPÉTRANT
+     |========================================================== */
+    public function impetrantUniqueString(Impetrant $impetrant): string
     {
-        // Convert the input date and time to a Carbon instance
-        $dateTime = Carbon::parse($inputtime);
+        $str  = strtoupper(trim($impetrant->nom ?? ''));
+        $str .= strtoupper(trim($impetrant->prenom ?? ''));
+        $str .= strtoupper(trim($impetrant->sexe ?? ''));
+        $str .= trim($impetrant->date_naissance ?? '');
+        $str .= trim($impetrant->nationalites_id ?? '');
 
-        // Get the current date and time
-        $now = Carbon::now();
+        return $str;
+    }
 
-        // Calculate the difference in seconds
-        $diffInSeconds = $now->diffInSeconds($dateTime);
+    /* ==========================================================
+     |  SIMILARITÉ RAPIDE (PRÉ-FILTRE)
+     |========================================================== */
+    public function tauxSimilarity(string $s1, string $s2): float
+    {
+        if ($s1 === '' || $s2 === '') {
+            return 0;
+        }
 
-        // Calculate the difference in minutes
-        $diffInMinutes = $now->diffInMinutes($dateTime);
+        $distance = levenshtein($s1, $s2);
+        $maxLen   = max(strlen($s1), strlen($s2));
 
-        // Calculate the difference in hours
-        $diffInHours = $now->diffInHours($dateTime);
+        if ($maxLen === 0) {
+            return 100;
+        }
 
-        // Calculate the difference in days
-        $diffInDays = $now->diffInDays($dateTime);
+        return round(100 - ($distance / $maxLen) * 100, 2);
+    }
 
-        // Calculate the difference in weeks
-        $diffInWeeks = $now->diffInWeeks($dateTime);
+    /* ==========================================================
+     |  SIMILARITÉ MÉTIER OFFICIELLE
+     |  — Délégué à IdentitySimilarityService (logique unifiée)
+     |  — Gère les prénoms composés, Levenshtein, garde-fou prénom
+     |========================================================== */
+    public static function tauxSimilarityDetaille(Impetrant $a, Impetrant $b): array
+    {
+        $result = IdentitySimilarityService::compare($a, $b);
 
-        // Calculate the difference in months
-        $diffInMonths = $now->diffInMonths($dateTime);
-
-        // Calculate the difference in years
-        $diffInYears = $now->diffInYears($dateTime);
-
-        // Return an associative array with the calculated values
-        $sorties =  [
-            "seconds" => $diffInSeconds,
-            "minutes" => $diffInMinutes,
-            "hours" => $diffInHours,
-            "days" => $diffInDays,
-            "weeks" => $diffInWeeks,
-            "months" => $diffInMonths,
-            "years" => $diffInYears
+        // Adapter le format de retour pour la compatibilité
+        // avec le code existant qui attend 'score', 'details', 'level'
+        return [
+            'score'   => $result['score'],
+            'level'   => self::similarityLevel($result['score']),
+            'decision'=> $result['decision'],
+            'details' => [
+                'nom' => [
+                    'a'      => strtoupper(trim($a->nom ?? '')),
+                    'b'      => strtoupper(trim($b->nom ?? '')),
+                    'match'  => $result['details']['nom'] >= 80,
+                    'weight' => 20,
+                    'score'  => $result['details']['nom'],
+                ],
+                'prenom' => [
+                    'a'      => strtoupper(trim($a->prenom ?? '')),
+                    'b'      => strtoupper(trim($b->prenom ?? '')),
+                    'match'  => $result['details']['prenom'] >= 60,
+                    'weight' => 30,
+                    'score'  => $result['details']['prenom'],
+                ],
+                'date_naissance' => [
+                    'a'      => $a->date_naissance ?? '—',
+                    'b'      => $b->date_naissance ?? '—',
+                    'match'  => $result['details']['date'],
+                    'weight' => 25,
+                    'score'  => $result['details']['date'] ? 25 : 0,
+                ],
+                'sexe' => [
+                    'a'      => $a->sexe ?? '—',
+                    'b'      => $b->sexe ?? '—',
+                    'match'  => $result['details']['sexe'],
+                    'weight' => 10,
+                    'score'  => $result['details']['sexe'] ? 10 : 0,
+                ],
+                'nationalites_id' => [
+                    'a'      => $a->nationalites_id ?? '—',
+                    'b'      => $b->nationalites_id ?? '—',
+                    'match'  => $result['details']['nationalite'],
+                    'weight' => 10,
+                    'score'  => $result['details']['nationalite'] ? 10 : 0,
+                ],
+            ],
         ];
+    }
 
-        // return $sorties;
-
-        if($diffInSeconds > 0 && $diffInSeconds < 60 ){
-            return "$diffInSeconds seconde(s)";
+    /* ==========================================================
+     |  NIVEAU DE SIMILARITÉ (DÉCISION MÉTIER)
+     |========================================================== */
+    public static function similarityLevel(float $score): array
+    {
+        if ($score >= 80) {
+            return [
+                'level'  => 'HIGH',
+                'label'  => 'Similarité élevée',
+                'color'  => 'danger',
+                'action' => 'Fusion fortement recommandée',
+            ];
         }
 
-        if($diffInSeconds > 60 && $diffInSeconds < 3600 ){
-            return "$diffInMinutes minute(s)";
+        if ($score >= 60) {
+            return [
+                'level'  => 'MEDIUM',
+                'label'  => 'Similarité moyenne',
+                'color'  => 'warning',
+                'action' => 'Vérification manuelle requise',
+            ];
         }
 
-        if($diffInSeconds > 3600 && $diffInSeconds < 86400 ){
-            return "$diffInHours heure(s)";
+        return [
+            'level'  => 'LOW',
+            'label'  => 'Similarité faible',
+            'color'  => 'success',
+            'action' => 'Aucune action nécessaire',
+        ];
+    }
+
+    public static function similarityDecision(float $score): array
+    {
+        $low    = env('SIMILARITY_LOW', 65);
+        $medium = env('SIMILARITY_MEDIUM', 80);
+        $high   = env('SIMILARITY_HIGH', 90);
+
+        if ($score >= $high) {
+            return [
+                'level'  => 'CRITICAL',
+                'label'  => 'Quasi-certitude',
+                'color'  => 'danger',
+                'action' => 'BLOCK'
+            ];
         }
 
-        if($diffInSeconds > 86400 && $diffInSeconds < 604800 ){
-            return "$diffInDays jour(s)";
+        if ($score >= $medium) {
+            return [
+                'level'  => 'HIGH',
+                'label'  => 'Probabilité forte',
+                'color'  => 'warning',
+                'action' => 'REVIEW'
+            ];
         }
 
-        if($diffInSeconds > 604800 && $diffInSeconds < 2419200 ){
-            return "$diffInWeeks semaine(s)";
+        if ($score >= $low) {
+            return [
+                'level'  => 'MEDIUM',
+                'label'  => 'Suspicion',
+                'color'  => 'info',
+                'action' => 'DISPLAY'
+            ];
         }
 
-        if($diffInMonths > 0 && $diffInMonths < 12){
-            return "$diffInMonths mois";
+        return [
+            'level'  => 'LOW',
+            'label'  => 'Faible similarité',
+            'color'  => 'secondary',
+            'action' => 'IGNORE'
+        ];
+    }
+
+    public static function maxSimilarityScore(Demande $demande): float
+    {
+        $impetrantBase = $demande->impetrant;
+
+        if (!$impetrantBase) {
+            return 0;
         }
 
-        if($diffInYears > 0){
-            return "$diffInYears année(s)";
+        $maxScore = 0;
+
+        $autresImpetrants = Impetrant::where('id', '!=', $impetrantBase->id)->get();
+
+        foreach ($autresImpetrants as $imp) {
+            $result = self::tauxSimilarityDetaille($impetrantBase, $imp);
+            if ($result['score'] > $maxScore) {
+                $maxScore = $result['score'];
+            }
         }
+
+        return round($maxScore, 2);
+    }
+
+    /* ==========================================================
+     |  UUID DEMANDE
+     |========================================================== */
+    public function demandeUuid(User $user): string
+    {
+        $userSeq = $this->strpad($user->id, 3);
+
+        $last = Demande::where('created_by', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $nextNumber = 1;
+
+        if ($last && $last->uuid) {
+            $nextNumber = ((int) substr($last->uuid, 13)) + 1;
+        }
+
+        return $userSeq . '_' . date('dmY') . '_' . $this->strpad($nextNumber, 10);
+    }
+
+    /* ==========================================================
+     |  UTILITAIRES
+     |========================================================== */
+    public function strpad(int $value, int $zeros): string
+    {
+        return str_pad($value, $zeros, '0', STR_PAD_LEFT);
+    }
+
+    public function joinFluxData(
+        int $pays_id,
+        int $frontieres_id,
+        string $from,
+        string $to
+    ) {
+        return collect(DB::select(
+            "SELECT
+                pays_id,
+                frontieres_id,
+                SUM(total_entree) AS tentree,
+                SUM(total_sortie) AS tsortie
+             FROM flux_migratoires
+             WHERE pays_id = ?
+               AND frontieres_id = ?
+               AND DATE(date_movement) BETWEEN ? AND ?",
+            [$pays_id, $frontieres_id, $from, $to]
+        ))->first();
+    }
+
+    public static function similarityScore(Impetrant $a, Impetrant $b): array
+    {
+        // Délégué à IdentitySimilarityService pour cohérence
+        $result = IdentitySimilarityService::compare($a, $b);
+
+        return [
+            'score' => $result['score'],
+            'level' => self::similarityLevel($result['score']),
+        ];
+    }
+
+    public function timespan($inputtime): string
+    {
+        $dateTime = Carbon::parse($inputtime);
+        $now      = Carbon::now();
+
+        if ($now->diffInSeconds($dateTime) < 60) {
+            return $now->diffInSeconds($dateTime) . ' seconde(s)';
+        }
+        if ($now->diffInMinutes($dateTime) < 60) {
+            return $now->diffInMinutes($dateTime) . ' minute(s)';
+        }
+        if ($now->diffInHours($dateTime) < 24) {
+            return $now->diffInHours($dateTime) . ' heure(s)';
+        }
+        if ($now->diffInDays($dateTime) < 7) {
+            return $now->diffInDays($dateTime) . ' jour(s)';
+        }
+        if ($now->diffInWeeks($dateTime) < 4) {
+            return $now->diffInWeeks($dateTime) . ' semaine(s)';
+        }
+        if ($now->diffInMonths($dateTime) < 12) {
+            return $now->diffInMonths($dateTime) . ' mois';
+        }
+
+        return $now->diffInYears($dateTime) . ' année(s)';
     }
 }

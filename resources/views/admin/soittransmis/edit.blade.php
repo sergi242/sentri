@@ -37,7 +37,7 @@
                                                 <div class="col-md-9 mx-auto">
                                                     <select class="select2-theme form-control" id="users_id" name="users_id">
                                                         @foreach ($users as $user)
-                                                            <option value="{{ $user->id }}" {{ $user->id == $soit_transmis->users->id ? 'selected' : '' }}>
+                                                            <option value="{{ $user->id }}" {{ $user->id == $soit_transmis->user->id ? 'selected' : '' }}>
                                                                 {{ $user->prenom }}&nbsp;{{ $user->nom }}
                                                             </option>
                                                         @endforeach

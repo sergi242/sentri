@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html class="loading" lang="en" data-textdirection="ltr">
+<!-- BEGIN: Head-->
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="author" content="PIXINVENT">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title')</title>
+    <link rel="apple-touch-icon" href="{{asset('img/apple-touch-icon.png')}}">
+    <link rel="shortcut icon" type="image/png" href="{{asset('img/apple-touch-icon.png')}}">
+
+    {{-- Polices : suppression Google Fonts CDN — fallback système --}}
+    <style>
+        body, * { font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; }
+    </style>
+
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/vendors.min.css')}}">
+
+    {{-- FullCalendar CSS — local --}}
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/fullcalendar/index.global.min.css')}}">
+
+    <!-- BEGIN: Theme CSS-->
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/bootstrap.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/bootstrap-extended.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/colors.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/components.css')}}">
+    <!-- END: Theme CSS-->
+
+    <!-- BEGIN: Page CSS-->
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/core/menu/menu-types/vertical-menu-modern.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/core/colors/palette-gradient.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/charts/jquery-jvectormap-2.0.3.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/charts/morris.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/core/colors/palette-gradient.css')}}">
+    @yield('styles')
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/fonts/simple-line-icons/style.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/plugins/animate/animate.min.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/plugins/extensions/toastr.css')}}">
+    <!-- END: Page CSS-->
+</head>
+<!-- END: Head-->
+
+<!-- BEGIN: Body-->
+<body class="vertical-layout vertical-menu-modern 2-columns fixed-navbar" data-open="click" data-menu="vertical-menu-modern" data-col="2-columns">
+
+    @include('admin.layouts.header-nav')
+
+    <!-- BEGIN: Content-->
+    @yield('content')
+    <!-- END: Content-->
+
+    <div class="sidenav-overlay"></div>
+    <div class="drag-target"></div>
+
+    <!-- BEGIN: Footer-->
+    <footer class="footer footer-static footer-light navbar-border navbar-shadow">
+        <p class="clearfix blue-grey lighten-2 text-sm-center mb-0 px-2">
+            <span class="float-md-left d-block d-md-inline-block">
+                Copyright &copy; 2023
+                <a class="text-bold-800 grey darken-2" href="#">DEPARTEMENT DES MIGRATIONS ET DU CONTROLE DES ETRANGERS</a>
+            </span>
+            <span id="scroll-top"></span>
+        </p>
+    </footer>
+    <!-- END: Footer-->
+
+    <!-- BEGIN: Vendor JS-->
+    <script src="{{asset('res/app-assets/vendors/js/vendors.min.js')}}"></script>
+    <!-- END: Vendor JS-->
+
+    <script src="{{asset('res/app-assets/js/core/app-menu.js')}}"></script>
+    <script src="{{asset('res/app-assets/js/core/app.js')}}"></script>
+    <script src="{{asset('res/app-assets/vendors/js/extensions/toastr.min.js')}}"></script>
+
+    @toastr_render
+
+    {{-- FullCalendar JS — local --}}
+    <script src="{{asset('res/app-assets/vendors/js/fullcalendar/index.global.min.js')}}"></script>
+    <script src="{{asset('res/app-assets/vendors/js/fullcalendar/fr.global.min.js')}}"></script>
+
+    @yield('scripts')
+
+    <script>
+        $(function(){
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            $('a.f-logout').on('click', function(){
+                $('form.form-logout').submit();
+                return false;
+            });
+        });
+
+        @if(session('forbidden'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Accès refusé',
+            text: '{{ addslashes(session("forbidden")) }}',
+            confirmButtonColor: '#d33'
+        });
+        @endif
+    </script>
+</body>
+<!-- END: Body-->
+</html>

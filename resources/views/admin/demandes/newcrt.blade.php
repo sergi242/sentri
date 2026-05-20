@@ -1,8 +1,26 @@
 @extends('admin.layouts.app')
 @section('title')
     Nouvelle demande CRT
+<div class="modal-body" id="modal-passeport-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="la la-times"></i> Fermer et corriger
+                </button>
+                <a href="#" id="btn-voir-demande" class="btn btn-primary" target="_blank">
+                    <i class="la la-eye"></i> Voir la demande existante
+                </a>
+                <a href="#" id="btn-renouveler" class="btn btn-success">
+                    <i class="la la-refresh"></i> Renouveler ce titre
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 @section('styles')
+
 
     <link rel="stylesheet" href="{{asset('res/app-assets/vendors/css/forms/selects/select2.min.css')}}">
     <link rel="stylesheet" href="{{asset('img/editorial.css')}}" type="text/css">
@@ -23,11 +41,15 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-1">
+                                            
                                           <img src="{{asset('img/armoi_.png')}}" id="carte" alt="">
+                                          
                                         </div>
                                         <div class="col-md-3">
                                           <p>
                                             <h1 id="quitance">QUITANCE</h1>
+                                            
+
                                             <h4>République du Congo</h4>
                                             <h6>Unité * Travail * Progrès</h6>
                                           </p>
@@ -42,6 +64,13 @@
                                         </div>
                                         <div class="col-md-7" >
                                             <h1 style="color: #fff; font-size:35px">DEMANDE DE LIVRANCE</h1>
+                                                  <button type="button" onclick="clearForm()" class="btn btn-sm btn-outline-danger">
+        <i class="la la-eraser"></i> Effacer
+    </button>
+
+    <button type="button" onclick="window.location.reload()" class="btn btn-sm btn-outline-secondary">
+        <i class="la la-refresh"></i> Recharger
+    </button>
                                             <h1 style="color: #fff; font-size:35px">DE CARTE DE RESIDENT</h1>
                                         </div>
                                         <div class="col-md-1">
@@ -58,8 +87,10 @@
                                           <img src="assets/img/congo.svg" id="carte" alt="">
                                         </div> -->
                                       </div>
-                                    <form class="form form-horizontal" method="POST" action="{{route('demandes.store')}}" enctype="multipart/form-data">
+                                    <form id="formDemande" class="form form-horizontal" method="POST" action="{{route('demandes.store')}}" enctype="multipart/form-data">
                                         @csrf
+                                        <input type="hidden" name="force_quittance" id="force_quittance" value="0">
+
                                         <div class="row">
                                             <div class="col-md-5 mt-2 mr-1 p2" style="border: #000 solid 1px; border-radius:10px 10px 10px 10px">
                                                 <h4 class="form-section"><i class="ft-file"></i> Pièces jointes</h4>
@@ -74,55 +105,10 @@
                                                         @endforelse
                                                     </div>
                                                 </div>
-                                                <h4 class="form-section"><i class="ft-file"></i> Information du passeport </h4>
-                                                    <div class="form-group row">
-                                                        <label class="col-md-4" for="numero_passeport">Numéro du passeport *</label>
-                                                        <div class="col-md-8 mx-auto">
-                                                            <input type="text" id="numero_passeport" class="form-control @error('numero_passeport') is-invalid @enderror"  value="{{old('numero_passeport')}}" name="numero_passeport" placeholder="Numéro du passeport" required>
-                                                            @error('numero_passeport')
-                                                                <div class="invalid-feedback">
-                                                                        {{$message}}
-                                                                </div>
-                                                            @enderror
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group row">
-                                                        <label class="col-md-4" for="date_emission_passeport">Date d'émission *</label>
-                                                        <div class="col-md-8 mx-auto">
-                                                            <input type="date" id="date_emission_passeport" class="form-control @error('date_emission_passeport') is-invalid @enderror"  value="{{old('date_emission_passeport')}}" name="date_emission_passeport" placeholder="Date émission du passeport" required>
-                                                            @error('date_emission_passeport')
-                                                                <div class="invalid-feedback">
-                                                                        {{$message}}
-                                                                </div>
-                                                            @enderror
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group row">
-                                                        <label class="col-md-4" for="date_expiration_passeport">Date d'expiration*</label>
-                                                        <div class="col-md-8 mx-auto">
-                                                            <input type="date" id="date_expiration_passeport" class="form-control @error('date_expiration_passeport') is-invalid @enderror"  value="{{old('date_expiration_passeport')}}" name="date_expiration_passeport" placeholder="Date d'expiration du passeport" required>
-                                                            @error('date_expiration_passeport')
-                                                                <div class="invalid-feedback">
-                                                                        {{$message}}
-                                                                </div>
-                                                            @enderror
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group row">
-                                                        <label class="col-md-4" for="passeport_delivre_par">Délivré par*</label>
-                                                        <div class="col-md-8 mx-auto">
-                                                            <select id="passeport_delivre_par" class="form-control @error('passeport_delivre_par') is-invalid @enderror" name="passeport_delivre_par" required>
-                                                                <option value="République du Congo" selected>République du Congo</option>
-                                                                <option value="Pays d'origine">Pays d'origine</option>
-                                                            </select>
-                                                            @error('passeport_delivre_par')
-                                                                <div class="invalid-feedback">
-                                                                        {{$message}}
-                                                                </div>
-                                                            @enderror
-                                                        </div>
-                                                    </div>
-                                                    <h4 class="form-section"><i class="ft-file"></i> Information sur la demande</h4>
+                                                @include('admin.demandes.partials._bloc_passeport', ['colLabel'=>'col-md-4','colField'=>'col-md-8'])
+<h4 class="form-section"><i class="ft-file"></i> Information sur la demande</h4>
+                                                    @include('admin.demandes.partials._bloc_quittance', ['colLabel'=>'col-md-4','colField'=>'col-md-8'])
+
                                                     <div class="form-group row">
                                                         <label class="col-md-4" for="uuid">Numéro fiche demande *</label>
                                                         <div class="col-md-8 mx-auto">
@@ -141,7 +127,7 @@
                                                             <select name="type_demande" id="type_demande" class="form-control @error('type_demande') is-invalid @enderror">
                                                                 {{-- <option value="">Selectionner</option> --}}
                                                                 <option value="Carte de résident temporaire" selected>Carte de résident temporaire</option>
-                                                                {{-- <option value="Visa" {{"Visa"==old("type_demande") ? "selected":""}}>Visa</option> --}}
+                                                                {{-- <option value="Diplomate" {{"Visa"==old("type_demande") ? "selected":""}}>Visa</option> --}}
                                                             </select>
                                                             @error('type_demande')
                                                                 <div class="invalid-feedback">
@@ -182,7 +168,32 @@
                                                         </div>
                                                     </div>
                                                     {{-- Section demande --}}
-
+{{-- ═══════════════════════════════════════════════
+     AGENT COMMANDITAIRE
+═══════════════════════════════════════════════ --}}
+<h4 class="form-section"><i class="la la-user-tie"></i> Agent commanditaire</h4>
+<div class="form-group row">
+    <label class="col-md-4" for="commanditaire_id">Agent commanditaire</label>
+    <div class="col-md-8 mx-auto">
+        <select name="commanditaire_id" id="commanditaire_id"
+            class="select2-theme form-control @error('commanditaire_id') is-invalid @enderror">
+            <option value="">— Aucun agent désigné —</option>
+            @foreach($usersActifs as $user)
+                <option value="{{ $user->id }}"
+                    {{ old('commanditaire_id') == $user->id ? 'selected' : '' }}>
+                    {{ $user->grades_id ? '[' . $user->grades_id . '] ' : '' }}{{ $user->nom }} {{ $user->prenom }}
+                </option>
+            @endforeach
+        </select>
+        @error('commanditaire_id')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+        <small class="form-text text-muted">
+            <i class="la la-info-circle"></i> Sélectionnez l'agent en charge de ce dossier.
+        </small>
+    </div>
+</div>
+{{-- ═══════════════════════════════════════════════ --}}
                                                     <h4 class="form-section"><i class="ft-file"></i> Opération de finalisation *</h4>
                                                     <div class="form-group row">
                                                         <label class="col-md-4" for="tag_demande">Libelé des données *</label>
@@ -231,7 +242,28 @@
                                             <div class="col-md-6 mt-2 p2" style="border: #000 solid 1px; border-radius:10px 10px 10px 10px">
                                                 <div class="form-body">
                                                     <h4 class="form-section"><i class="ft-user"></i> Information de l'Impétrant</h4>
+                                            <!-- LECTEUR PASSEPORT -->
+                                            <div class="form-group row" id="passport-reader-section">
+                                                <label class="col-md-3 label-control"></label>
+                                                <div class="col-md-9">
+                                                    <button type="button" id="btn-lire-passeport" class="btn btn-primary">
+                                                        <i class="la la-id-card"></i> &nbsp; Lire le passeport
+                                                    </button>
+                                                    &nbsp;
+                                                    <button type="button" id="btn-restart-lecteur" class="btn btn-warning btn-sm" title="Réinitialiser le lecteur">
+                                                        <i class="la la-refresh"></i> Réinitialiser
+                                                    </button>
+                                                    &nbsp; <span id="passport-status"></span>
+                                                    <div id="passport-photo-preview" style="display:none;margin-top:8px;">
+                                                        <img id="passport-photo-img" src="" style="height:150px;border-radius:6px;border:3px solid #28D094;">
+                                                        <br><small class="text-success"><i class="la la-check-circle"></i> <strong>Photo biométrique depuis la puce</strong></small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- FIN LECTEUR PASSEPORT -->
+
                                                     <div class="form-group row">
+                                                        
                                                         <label class="col-md-4" for="nom">Nom *</label>
                                                         <div class="col-md-8 mx-auto">
                                                             <input type="text" id="nom" class="form-control @error('nom') is-invalid @enderror" placeholder="Nom" value="{{old('nom')}}" name="nom" required>
@@ -562,9 +594,14 @@
                                             </div>
                                         </div>
                                         <div class="form-actions">
-                                            <button type="submit" class="btn btn-primary">
+
+
+
+
+                                            <button type="submit" class="btn btn-primary" id="submitBtn" >
                                                 <i class="la la-check-square-o"></i> Sauvegarder
                                             </button>
+
                                             <a href="{{route('demandes.index')}}" class="btn btn-warning">Retour</a>
                                         </div>
                                     </form>
@@ -579,12 +616,144 @@
     </div>
 </div>
 <!-- END: Content-->
+<div class="modal fade" id="quittanceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-warning">
+    <h5 class="modal-title">⚠️ Quittance déjà utilisée</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-4 text-center">
+            <img id="modalPhoto" class="img-fluid rounded border" />
+          </div>
+          <div class="col-md-8">
+            <table class="table table-sm">
+              <tr><th>Nom</th><td id="modalNom"></td></tr>
+              <tr><th>Prénom</th><td id="modalPrenom"></td></tr>
+              <tr><th>Date naissance</th><td id="modalNaissance"></td></tr>
+              <tr><th>Nationalité</th><td id="modalNationalite"></td></tr>
+              <tr><th>N° quittance</th><td id="modalQuittance"></td></tr>
+              <tr><th>Date</th><td id="modalDate"></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+        Annuler
+    </button>
+    <button type="button" class="btn btn-success" id="confirmQuittance">
+        Confirmer
+    </button>
+</div>
+
+
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal Passeport Existant -->
+<div class="modal fade" id="modal-passeport-existant" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#FF4961;color:white;">
+                <h5 class="modal-title">
+                    <i class="la la-exclamation-triangle"></i>
+                    Passeport déjà enregistré dans le système
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" style="color:white;">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-passeport-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="la la-times"></i> Fermer et corriger
+                </button>
+                <a href="#" id="btn-voir-demande" class="btn btn-primary" target="_blank">
+                    <i class="la la-eye"></i> Voir la demande existante
+                </a>
+                <a href="#" id="btn-renouveler" class="btn btn-success">
+                    <i class="la la-refresh"></i> Renouveler ce titre
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 @section('scripts')
     <script src="{{ asset('res/app-assets/vendors/js/forms/select/select2.full.min.js') }}"></script>
     <script src="{{ asset('res/app-assets/js/scripts/forms/select/form-select2.min.js') }}"></script>
     <script>
+        
+// ── Toggle passeport ────────────────────────────────────────────────────
+function togglePasseport(mode) {
+    var bloc     = document.getElementById('bloc_passeport');
+    var blocSans = document.getElementById('bloc_sans_passeport');
+    var hidden   = document.getElementById('hidden_sans_passeport');
+    var fields   = ['numero_passeport','date_emission_passeport','date_expiration_passeport','passeport_delivre_par'];
+
+    if (mode === 'sans') {
+        bloc.style.display     = 'none';
+        blocSans.style.display = '';
+        hidden.value           = '1';
+        fields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.removeAttribute('required'); el.value = ''; }
+        });
+    } else {
+        bloc.style.display     = '';
+        blocSans.style.display = 'none';
+        hidden.value           = '0';
+        fields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el && id !== 'passeport_delivre_par') el.setAttribute('required','required');
+        });
+    }
+}
+
+// ── Toggle quittance ────────────────────────────────────────────────────
+function toggleQuittance(mode) {
+    var bloc       = document.getElementById('bloc_quittance');
+    var hidden     = document.getElementById('hidden_sans_quittance');
+    var input      = document.getElementById('numero_quittance');
+    var forceInput = document.getElementById('force_quittance');
+
+    if (mode === 'sans') {
+        bloc.style.opacity       = '0.5';
+        bloc.style.pointerEvents = 'none';
+        hidden.value             = '1';
+        if (input)      { input.removeAttribute('required'); input.value = 'GRATIS'; }
+        if (forceInput) { forceInput.value = '1'; }
+        // Marquer quittance comme confirmée pour bypasser la vérification
+        window.quittanceDetectee  = false;
+        window.window.quittanceConfirmee = true;
+        var msgV = document.getElementById('quittanceValidMsg');
+        var msgL = document.getElementById('quittanceLockedMsg');
+        if (msgV) msgV.classList.add('d-none');
+        if (msgL) msgL.classList.add('d-none');
+    } else {
+        bloc.style.opacity       = '1';
+        bloc.style.pointerEvents = 'auto';
+        hidden.value             = '0';
+        if (input)      { input.value = ''; }
+        if (forceInput) { forceInput.value = '0'; }
+        // Réinitialiser la confirmation
+        window.quittanceDetectee  = false;
+        window.quittanceConfirmee = false;
+    }
+}
+
         $(function () {
             $('#departements_id').on('change', function () {
                 var id = $(this).val();
@@ -693,4 +862,349 @@
             $(sd).val(resultDate);
         }
     </script>
+
+<script>
+
+
+
+
+
+
+<script>
+function clearForm() {
+  document.getElementById('formDemande').reset();
+
+  // Pour les champs non standards (Select2, etc.)
+  document.querySelectorAll('#formDemande input, #formDemande select, #formDemande textarea')
+    .forEach(el => {
+      el.value = '';
+      el.checked = false;
+      el.selectedIndex = 0;
+    });
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    window.quittanceDetectee = false;
+    window.quittanceConfirmee = false;
+    var quittanceDetectee  = window.quittanceDetectee;
+    var quittanceConfirmee = window.quittanceConfirmee;
+
+    const input = document.getElementById('numero_quittance');
+    const form = document.getElementById('formDemande');
+    const btnConfirm = document.getElementById('confirmQuittance');
+    const forceInput = document.getElementById('force_quittance');
+
+    const msgValid = document.getElementById('quittanceValidMsg');
+    const msgLocked = document.getElementById('quittanceLockedMsg');
+
+    function resetMessages() {
+        msgValid.classList.add('d-none');
+        msgLocked.classList.add('d-none');
+    }
+
+    // 🔍 Vérification quittance
+    input.addEventListener('blur', function () {
+
+        if (!this.value) return;
+        // Ignorer si mode sans quittance
+        if (document.getElementById('hidden_sans_quittance') &&
+            document.getElementById('hidden_sans_quittance').value === '1') return;
+        if (this.value === 'GRATIS') return;
+
+        resetMessages();
+        window.quittanceDetectee = false;
+        window.quittanceConfirmee = false;
+        forceInput.value = 0;
+
+        fetch("{{ route('demandes.checkQuittance') }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                numero_quittance: this.value
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            // ✅ CAS 1 : quittance inexistante → OK
+            if (!data.warning) {
+                msgValid.classList.remove('d-none');
+                return;
+            }
+
+            // ❌ CAS 2 : quittance déjà utilisée
+            window.quittanceDetectee = true;
+
+            document.getElementById('modalNom').innerText = data.demande.nom;
+            document.getElementById('modalPrenom').innerText = data.demande.prenom;
+            document.getElementById('modalNaissance').innerText = data.demande.date_naissance;
+            document.getElementById('modalNationalite').innerText = data.demande.nationalite;
+            document.getElementById('modalQuittance').innerText = data.demande.numero_quittance;
+            document.getElementById('modalDate').innerText = data.demande.date;
+            document.getElementById('modalPhoto').src = data.demande.photo;
+
+            $('#quittanceModal').modal('show');
+        });
+    });
+
+    // ✅ Confirmation popup
+    btnConfirm.addEventListener('click', function () {
+
+        window.quittanceConfirmee = true;
+        forceInput.value = 1;
+
+        input.setAttribute('readonly', true);
+        input.classList.add('bg-light');
+
+        msgLocked.classList.remove('d-none');
+
+        $('#quittanceModal').modal('hide');
+    });
+
+    // 🚫 Protection soumission
+    form.addEventListener('submit', function (e) {
+        if (quittanceDetectee && !quittanceConfirmee) {
+            e.preventDefault();
+            toastr.warning("Veuillez confirmer la quittance avant l’enregistrement.");
+        }
+    });
+
+});
+
+</script>
+@include('admin.demandes._precheck_modal')
+
+
+<script>
+// ===== LECTEUR PASSEPORT DMCE =====
+$(document).ready(function() {
+    var READER_URL = 'http://127.0.0.1:8085';
+
+    // Vérifier statut au chargement
+    $.ajax({
+        url: READER_URL + '/status',
+        method: 'GET',
+        timeout: 2000,
+        success: function() {
+            $('#btn-lire-passeport').prop('disabled', false);
+            setStatus('success', '<i class="la la-check-circle"></i> Lecteur connecté');
+        },
+        error: function() {
+            $('#btn-lire-passeport').prop('disabled', false);
+            setStatus('warning', '<i class="la la-exclamation-triangle"></i> Service lecteur non démarré');
+        }
+    });
+
+    // Clic sur le bouton
+    $('#btn-lire-passeport').on('click', function() {
+        $('#btn-lire-passeport').prop('disabled', true);
+        setStatus('info', '<i class="la la-spinner la-spin"></i> Lecture en cours... Posez le passeport sur le lecteur');
+        $('#passport-photo-preview').hide();
+
+        $.ajax({
+            url: READER_URL + '/read',
+            method: 'GET',
+            timeout: 120000,
+            success: function(data) {
+                if (data.status === 'success') {
+                    remplirFormulaire(data);
+                } else if (data.status === 'timeout2') {
+                    setStatus('warning', '<i class="la la-exclamation-triangle"></i> ' + data.message);
+                    $('#btn-lire-passeport').prop('disabled', false);
+                } else if (data.status === 'timeout') {
+                    setStatus('warning', '<i class="la la-clock-o"></i> ' + data.message);
+                    $('#btn-lire-passeport').prop('disabled', false);
+                } else {
+                    setStatus('danger', '<i class="la la-times-circle"></i> Erreur : ' + (data.message || 'Inconnue'));
+                    $('#btn-lire-passeport').prop('disabled', false);
+                }
+            },
+            error: function() {
+                setStatus('danger', '<i class="la la-times-circle"></i> Service non disponible. Vérifiez que le programme Java tourne.');
+                $('#btn-lire-passeport').prop('disabled', false);
+            }
+        });
+    });
+
+    function remplirFormulaire(data) {
+        // Identité
+        if (data.nom)      $('#nom').val(data.nom);
+        if (data.prenoms)  $('#prenom').val(data.prenoms);
+        if (data.sexe) {
+            var sexe = data.sexe === 'M' ? 'Masculin' : 'Féminin';
+            $('#sexe').val(sexe);
+        }
+        if (data.naissance)     $('#date_naissance').val(data.naissance);
+        if (data.lieu_naissance && data.lieu_naissance !== '')
+            $('#lieu_naissance').val(data.lieu_naissance);
+        if (data.profession && data.profession !== '')
+            $('#profession').val(data.profession);
+        if (data.telephone && data.telephone !== '')
+            $('#telephone').val(data.telephone);
+
+        // Passeport
+        if (data.num_doc)    $('#numero_passeport').val(data.num_doc);
+        // ── Champs cachés pour sauvegarde impetrant_documents ─────────────
+        if (data.mrz)       $('#h_mrz').val(data.mrz);
+        $('#h_source_doc').val(data.num_doc ? 'lecteur' : 'manuel');
+        // Déclencher la vérification doublon document existant
+        if (data.num_doc)   $('#numero_passeport').trigger('input');
+        // ──────────────────────────────────────────────────────────────────
+        if (data.expiration) $('#date_expiration_passeport').val(data.expiration);
+        if (data.lieu_emission && data.lieu_emission !== '')
+            $('#passeport_delivre_par').val(data.lieu_emission);
+
+        // Date émission depuis Java (déjà calculée)
+        if (data.date_emission && data.date_emission !== '') {
+            $('#date_emission_passeport').val(data.date_emission);
+        }
+
+        // Nationalité via API Laravel (code_iso 3 lettres)
+        if (data.nationalite) {
+            $.get('/api/passport/pays', function(pays) {
+                var code = data.nationalite.toUpperCase();
+                if (pays[code]) {
+                    $('#nationalites_id').val(pays[code].id);
+                    if ($.fn.select2) $('#nationalites_id').trigger('change.select2');
+                    else $('#nationalites_id').trigger('change');
+                }
+            });
+        }
+
+        // Photo biométrique
+        if (data.photo_base64 && data.photo_base64.length > 100) {
+            var imgSrc = 'data:image/jpeg;base64,' + data.photo_base64;
+            $('#passport-photo-img').attr('src', imgSrc);
+            $('#passport-photo-preview').show();
+            try {
+                var byteString = atob(data.photo_base64);
+                var ab = new ArrayBuffer(byteString.length);
+                var ia = new Uint8Array(ab);
+                for (var i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                var blob = new Blob([ab], {type:'image/jpeg'});
+                var file = new File([blob], 'passport_photo.jpg', {type:'image/jpeg'});
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                document.getElementById('photo').files = dt.files;
+            } catch(e) { console.log('Photo: ' + e); }
+
+            setStatus('success',
+                '<i class="la la-check-circle"></i> <strong>Passeport lu !</strong> ' +
+                '<small class="text-muted">Source: ' + data.source_photo + '</small>');
+        } else {
+            setStatus('success', '<i class="la la-check-circle"></i> Données lues.');
+        }
+
+        $('#btn-lire-passeport').prop('disabled', false);
+        if (typeof toastr !== 'undefined')
+            toastr.success('Formulaire rempli automatiquement !', 'Lecteur passeport');
+    }
+
+
+    // Bouton réinitialiser lecteur
+    $('#btn-restart-lecteur').on('click', function() {
+        $('#btn-restart-lecteur').prop('disabled', true);
+        setStatus('info', '<i class="la la-refresh la-spin"></i> Reinitialisation...');
+        $.ajax({
+            url: READER_URL + '/restart',
+            method: 'GET',
+            timeout: 10000,
+            success: function() {
+                setTimeout(function() {
+                    setStatus('success', '<i class="la la-check-circle"></i> Lecteur reinitialise !');
+                    $('#btn-restart-lecteur').prop('disabled', false);
+                    $('#btn-lire-passeport').prop('disabled', false);
+                }, 3000);
+            },
+            error: function() {
+                setStatus('danger', '<i class="la la-times-circle"></i> Erreur reinitialisation');
+                $('#btn-restart-lecteur').prop('disabled', false);
+            }
+        });
+    });
+
+    function setStatus(type, html) {
+        var colors = {'success':'#28D094','warning':'#FF9149','danger':'#FF4961','info':'#1E9FF2'};
+        $('#passport-status').html('<span style="color:' + (colors[type]||'#333') + '">' + html + '</span>');
+    }
+});
+// ===== FIN LECTEUR PASSEPORT =====
+</script>
+
+
+<script>
+// ===== VERIFICATION PASSEPORT EXISTANT =====
+$(document).ready(function() {
+
+    var checkTimer = null;
+
+    $('#numero_passeport').on('input blur', function() {
+        var numero = $(this).val().trim();
+        if (numero.length < 5) return;
+
+        clearTimeout(checkTimer);
+        checkTimer = setTimeout(function() {
+            checkPasseportExistant(numero);
+        }, 600);
+    });
+
+    function checkPasseportExistant(numero) {
+        $.get('/api/passport/check/' + encodeURIComponent(numero), function(data) {
+            if (data.found) {
+                afficherModalPasseport(data.demande);
+            }
+        });
+    }
+
+    function afficherModalPasseport(d) {
+        var statut_color = {
+            "En attente d'approbation": '#FF9149',
+            "Approuvée": '#28D094',
+            "Rejetée": '#FF4961',
+            "Livrée": '#1E9FF2',
+            "Envoyée au contentieux": '#FF4961'
+        }[d.statut_demande] || '#666';
+
+        var photo = d.photo ?
+            '<img src="/app/' + d.photo + '" style="height:100px;border-radius:6px;border:2px solid #ddd;">' :
+            '<div style="height:100px;width:80px;background:#eee;display:flex;align-items:center;justify-content:center;border-radius:6px;"><i class="la la-user" style="font-size:2em;color:#999;"></i></div>';
+
+        var html = '<div class="row">' +
+            '<div class="col-md-2 text-center">' + photo + '</div>' +
+            '<div class="col-md-10">' +
+            '<table class="table table-bordered table-sm">' +
+            '<tr><th width="35%">Impétrant</th><td><strong>' + (d.nom||'') + ' ' + (d.prenom||'') + '</strong></td></tr>' +
+            '<tr><th>Date naissance</th><td>' + (d.date_naissance||'-') + '</td></tr>' +
+            '<tr><th>Nationalité</th><td>' + (d.nationalite||'-') + '</td></tr>' +
+            '<tr><th>N° passeport</th><td><strong>' + (d.numero_document||'') + '</strong></td></tr>' +
+            '<tr><th>Type document</th><td>' + (d.type_document||'-') + '</td></tr>' +
+            '<tr><th>Émission</th><td>' + (d.date_emission||'-') + '</td></tr>' +
+            '<tr><th>Expiration</th><td>' + (d.date_expiration||'-') + '</td></tr>' +
+            '<tr><th>Type demande</th><td>' + (d.type_demande||'-') + '</td></tr>' +
+            '<tr><th>Date demande</th><td>' + (d.date_demande||'-') + '</td></tr>' +
+            '<tr><th>Statut</th><td><span style="color:' + statut_color + ';font-weight:bold;">' + (d.statut_demande||'-') + '</span></td></tr>' +
+            '<tr><th>N° UUID</th><td><code>' + (d.uuid||'-') + '</code></td></tr>' +
+            '</table>' +
+            '</div></div>' +
+            '<div class="alert alert-warning mt-1 mb-0">' +
+            '<i class="la la-exclamation-triangle"></i> ' +
+            'Ce numéro de passeport est déjà associé à une demande. ' +
+            'Voulez-vous renouveler ce titre ou corriger le numéro saisi ?' +
+            '</div>';
+
+        $('#modal-passeport-body').html(html);
+        $('#btn-voir-demande').attr('href', '/demandes/' + d.demande_id);
+        $('#btn-renouveler').attr('href', '/demandes/' + d.demande_id + '/renouvellement');
+        $('#modal-passeport-existant').modal('show');
+    }
+});
+// ===== FIN VERIFICATION PASSEPORT =====
+</script>
+
 @endsection
+

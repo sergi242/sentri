@@ -1,0 +1,717 @@
+@extends('admin.layouts.app')
+@section('title')
+    Ajouter une demande
+@endsection
+@section('styles')
+    <link rel="stylesheet" href="{{asset('res/app-assets/vendors/css/forms/selects/select2.min.css')}}">
+@endsection
+@section('content')
+
+{{-- ── Bandeau pré-remplissage ─────────────────────────────────────────── --}}
+@if($impetrantPrefill ?? null)
+<div class="alert alert-info d-flex align-items-center mb-0" style="border-radius:0;border-left:4px solid #1E9FF2;">
+    <i class="la la-info-circle mr-2" style="font-size:20px;"></i>
+    <div>
+        Formulaire pré-rempli depuis la fiche de
+        <strong>{{ strtoupper($impetrantPrefill->nom) }} {{ $impetrantPrefill->prenom }}</strong>
+        &nbsp;—&nbsp;
+        <a href="{{ route('impetrants.casier', $impetrantPrefill->id) }}" class="alert-link">
+            <i class="la la-arrow-left"></i> Retour à la fiche
+        </a>
+    </div>
+</div>
+@endif
+
+<div class="app-content content">
+    <div class="content-overlay"></div>
+    <div class="content-wrapper">
+        <div class="content-body">
+            <section id="horizontal-form-layouts">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-content collpase show">
+                                <div class="card-body">
+                                    <form class="form form-horizontal" method="POST" action="{{route('demandes.store')}}" enctype="multipart/form-data">
+                                        @csrf
+
+                                        {{-- Champ caché : lie la demande à l'impétrant existant --}}
+                                        @if($impetrantPrefill ?? null)
+                                        <input type="hidden" name="impetrant_prefill_id" value="{{ $impetrantPrefill->id }}">
+                                        @endif
+
+                                        <div class="form-body">
+                                            <h4 class="form-section"><i class="ft-user"></i> Information de l'Impétrant</h4>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nom">Nom *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="nom"
+                                                        class="form-control @error('nom') is-invalid @enderror"
+                                                        placeholder="Nom"
+                                                        value="{{ old('nom', $impetrantPrefill->nom ?? '') }}"
+                                                        name="nom" required>
+                                                    @error('nom')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="prenom">Prénom *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="prenom"
+                                                        class="form-control @error('prenom') is-invalid @enderror"
+                                                        placeholder="Prénom"
+                                                        value="{{ old('prenom', $impetrantPrefill->prenom ?? '') }}"
+                                                        name="prenom" required>
+                                                    @error('prenom')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="sexe">Sexe *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select id="sexe"
+                                                        class="form-control @error('sexe') is-invalid @enderror"
+                                                        name="sexe" required>
+                                                        @php
+                                                            $sexePrefill = old('sexe', $impetrantPrefill->sexe ?? '');
+                                                        @endphp
+                                                        <option value="Masculin" {{ $sexePrefill === 'Masculin' || $sexePrefill === 'M' ? 'selected' : '' }}>Masculin</option>
+                                                        <option value="Féminin"  {{ $sexePrefill === 'Féminin'  || $sexePrefill === 'F' ? 'selected' : '' }}>Féminin</option>
+                                                    </select>
+                                                    @error('sexe')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_naissance">Date de naissance *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" id="date_naissance"
+                                                        class="form-control @error('date_naissance') is-invalid @enderror"
+                                                        value="{{ old('date_naissance', isset($impetrantPrefill->date_naissance) ? \Carbon\Carbon::parse($impetrantPrefill->date_naissance)->format('Y-m-d') : '') }}"
+                                                        name="date_naissance" required>
+                                                    @error('date_naissance')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="lieu_naissance">Lieu de naissance *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="lieu_naissance"
+                                                        class="form-control @error('lieu_naissance') is-invalid @enderror"
+                                                        value="{{ old('lieu_naissance', $impetrantPrefill->lieu_naissance ?? '') }}"
+                                                        name="lieu_naissance" placeholder="Lieu de naissance" required>
+                                                    @error('lieu_naissance')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="etat_civil">Etat civil *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select class="select2-theme form-control" id="etat_civil" name="etat_civil">
+                                                        @foreach ($etatsCivils as $ec)
+                                                            <option value="{{$ec}}" {{$ec==old("etat_civil") ? "selected":""}}>{{$ec}}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('etat_civil')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row nc">
+                                                <label class="col-md-3 label-control" for="nom_conjoint">Nom du conjoint *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" class="form-control" id="nom_conjoint" name="nom_conjoint" placeholder="Nom du conjoint">
+                                                    @error('nom_conjoint')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nationalites_id">Nationalité *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select class="select2-theme form-control" id="nationalites_id" name="nationalites_id">
+                                                        <option value="">Selectionner</option>
+                                                        @foreach ($pays as $p)
+                                                            <option value="{{$p->id}}"
+                                                                {{ (old('nationalites_id', $impetrantPrefill->nationalites_id ?? '') == $p->id) ? 'selected' : '' }}>
+                                                                {{ $p->lib_pays }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('nationalites_id')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <h4 class="form-section"><i class="ft-home"></i> Information de contact</h4>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="departements_id">Département *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select class="select2-theme form-control" id="departements_id" name="departements_id">
+                                                        <option value="">Selectionner</option>
+                                                        @foreach ($departements as $d)
+                                                            <option value="{{$d->id}}"
+                                                                {{ (old('departements_id', $impetrantPrefill->departements_id ?? '') == $d->id) ? 'selected' : '' }}>
+                                                                {{ $d->lib_departement }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('departements_id')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="arrondissements_id">Arrondissement / Commune *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select id="arrondissements_id"
+                                                        class="form-control @error('arrondissements_id') is-invalid @enderror"
+                                                        name="arrondissements_id" required></select>
+                                                    @error('arrondissements_id')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="quartiers_id">Quartier / Village *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select id="quartiers_id"
+                                                        class="form-control @error('quartiers_id') is-invalid @enderror"
+                                                        name="quartiers_id" required></select>
+                                                    @error('quartiers_id')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="avenue_rue">Avenue / Rue *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="avenue_rue"
+                                                        class="form-control @error('avenue_rue') is-invalid @enderror"
+                                                        value="{{ old('avenue_rue', $impetrantPrefill->adresse ?? '') }}"
+                                                        name="avenue_rue" placeholder="Avenue / rue" required>
+                                                    @error('avenue_rue')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="numero_adresse">Numéro domicile *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="numero_adresse"
+                                                        class="form-control @error('numero_adresse') is-invalid @enderror"
+                                                        value="{{ old('numero_adresse') }}"
+                                                        name="numero_adresse" placeholder="Numéro" required>
+                                                    @error('numero_adresse')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="telephone">Numéro de téléphone *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="telephone"
+                                                        class="form-control @error('telephone') is-invalid @enderror"
+                                                        value="{{ old('telephone', $impetrantPrefill->telephone ?? '') }}"
+                                                        name="telephone" placeholder="Numéro de téléphone" required>
+                                                    @error('telephone')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="email">Email</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="email"
+                                                        class="form-control @error('email') is-invalid @enderror"
+                                                        value="{{ old('email', $impetrantPrefill->email ?? '') }}"
+                                                        name="email" placeholder="Email">
+                                                    @error('email')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="photo">Photo *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    {{-- Aperçu photo de l'impétrant direct si disponible --}}
+                                                    @if(isset($impetrantPrefill) && $impetrantPrefill->photo && file_exists(public_path('app/' . $impetrantPrefill->photo)))
+                                                    <div class="mb-2 d-flex align-items-center" style="gap:10px;">
+                                                        <img src="{{ asset('app/' . $impetrantPrefill->photo) }}"
+                                                             style="height:70px;border-radius:6px;border:2px solid #dee2e6;"
+                                                             title="Photo enregistrée lors de la saisie directe">
+                                                        <small class="text-muted">
+                                                            <i class="la la-info-circle"></i>
+                                                            Photo issue de la fiche impétrant. Vous pouvez en charger une nouvelle.
+                                                        </small>
+                                                    </div>
+                                                    @endif
+                                                    <input type="file" id="photo"
+                                                        class="form-control @error('photo') is-invalid @enderror"
+                                                        name="photo" accept="image/*"
+                                                        {{ isset($impetrantPrefill) && $impetrantPrefill->photo ? '' : 'required' }}>
+                                                    @error('photo')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <h4 class="form-section"><i class="ft-users"></i> Information des parents</h4>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nom_pere">Nom père *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="nom_pere"
+                                                        class="form-control @error('nom_pere') is-invalid @enderror"
+                                                        value="{{ old('nom_pere', $impetrantPrefill->nom_pere ?? '') }}"
+                                                        name="nom_pere" placeholder="Nom du père" required>
+                                                    @error('nom_pere')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="prenom_pere">Prénom père *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="prenom_pere"
+                                                        class="form-control @error('prenom_pere') is-invalid @enderror"
+                                                        value="{{ old('prenom_pere', $impetrantPrefill->prenom_pere ?? '') }}"
+                                                        name="prenom_pere" placeholder="Prénom du père" required>
+                                                    @error('prenom_pere')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="nom_mere">Nom de la mère *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="nom_mere"
+                                                        class="form-control @error('nom_mere') is-invalid @enderror"
+                                                        value="{{ old('nom_mere', $impetrantPrefill->nom_mere ?? '') }}"
+                                                        name="nom_mere" placeholder="Nom de la mère" required>
+                                                    @error('nom_mere')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="prenom_mere">Prénom mère *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="prenom_mere"
+                                                        class="form-control @error('prenom_mere') is-invalid @enderror"
+                                                        value="{{ old('prenom_mere', $impetrantPrefill->prenom_mere ?? '') }}"
+                                                        name="prenom_mere" placeholder="Prénom de la mère" required>
+                                                    @error('prenom_mere')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <h4 class="form-section"><i class="ft-users"></i> Information de la profession</h4>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="profession">Profession *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="profession"
+                                                        class="form-control @error('profession') is-invalid @enderror"
+                                                        value="{{ old('profession', $impetrantPrefill->profession ?? '') }}"
+                                                        name="profession" placeholder="Votre profession" required>
+                                                    @error('profession')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="employeur">Nom de l'Employeur</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="employeur"
+                                                        class="form-control @error('employeur') is-invalid @enderror"
+                                                        value="{{ old('employeur') }}"
+                                                        name="employeur" placeholder="Nom de l'employeur">
+                                                    @error('employeur')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="adresse_employeur">Adresse de l'Employeur</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="adresse_employeur"
+                                                        class="form-control @error('adresse_employeur') is-invalid @enderror"
+                                                        value="{{ old('adresse_employeur') }}"
+                                                        name="adresse_employeur" placeholder="Adresse de l'employeur">
+                                                    @error('adresse_employeur')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            @include('admin.demandes.partials._bloc_passeport', ['colLabel'=>'col-md-4','colField'=>'col-md-8'])
+
+                                            <h4 class="form-section"><i class="ft-file"></i> Information de la carte Consulaire</h4>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="numero_carte_consulaire">Numéro de la carte</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="numero_carte_consulaire"
+                                                        class="form-control @error('numero_carte_consulaire') is-invalid @enderror"
+                                                        value="{{ old('numero_carte_consulaire') }}"
+                                                        name="numero_carte_consulaire" placeholder="Numéro de la carte consulaire">
+                                                    @error('numero_carte_consulaire')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_emission_carte_consulaire">Date d'émission</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" id="date_emission_carte_consulaire"
+                                                        class="form-control @error('date_emission_carte_consulaire') is-invalid @enderror"
+                                                        value="{{ old('date_emission_carte_consulaire') }}"
+                                                        name="date_emission_carte_consulaire">
+                                                    @error('date_emission_carte_consulaire')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_expiration_carte_consulaire">Date d'expiration</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" id="date_expiration_carte_consulaire"
+                                                        class="form-control @error('date_expiration_carte_consulaire') is-invalid @enderror"
+                                                        value="{{ old('date_expiration_carte_consulaire') }}"
+                                                        name="date_expiration_carte_consulaire">
+                                                    @error('date_expiration_carte_consulaire')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="carte_delivre_par">Délivré par</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="text" id="carte_delivre_par"
+                                                        class="form-control @error('carte_delivre_par') is-invalid @enderror"
+                                                        value="{{ old('carte_delivre_par') }}"
+                                                        name="carte_delivre_par" placeholder="Délivré par">
+                                                    @error('carte_delivre_par')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <h4 class="form-section"><i class="ft-file"></i> Information sur la demande</h4>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="type_demande">Type demande *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select name="type_demande" id="type_demande"
+                                                        class="form-control @error('type_demande') is-invalid @enderror">
+                                                        <option value="">Selectionner</option>
+                                                        <option value="Carte de résident temporaire" {{"Carte de résident temporaire"==old("type_demande") ? "selected":""}}>Carte de résident temporaire</option>
+                                                        <option value="Visa" {{"Visa"==old("type_demande") ? "selected":""}}>Visa</option>
+                                                    </select>
+                                                    @error('type_demande')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="validite">Validité *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select name="validite" id="validite"
+                                                        class="form-control @error('validite') is-invalid @enderror">
+                                                        <option value="">Selectionner</option>
+                                                        @foreach ($validites as $v)
+                                                            <option value="{{$v}}" {{ $v==old("validite") ? "selected":"" }}>{{$v}}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('validite')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="date_demande">Date de la demande *</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <input type="date" name="date_demande" id="date_demande"
+                                                        class="form-control @error('date_demande') is-invalid @enderror"
+                                                        value="{{ old('date_demande') }}">
+                                                    @error('date_demande')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                </div>
+                                            </div>
+
+                                            <h4 class="form-section"><i class="la la-user-tie"></i> Agent commanditaire</h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control" for="commanditaire_id">Agent commanditaire</label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <select name="commanditaire_id" id="commanditaire_id"
+                                                        class="select2-theme form-control @error('commanditaire_id') is-invalid @enderror">
+                                                        <option value="">— Aucun agent désigné —</option>
+                                                        @foreach($usersActifs as $user)
+                                                            <option value="{{ $user->id }}"
+                                                                {{ old('commanditaire_id') == $user->id ? 'selected' : '' }}>
+                                                                {{ $user->grade ? '[' . $user->grade . '] ' : '' }}{{ $user->name }} {{ $user->prenom }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('commanditaire_id')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                    <small class="form-text text-muted">
+                                                        <i class="la la-info-circle"></i> Sélectionnez l'agent en charge de ce dossier.
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            <h4 class="form-section"><i class="ft-file"></i> Opération de finalisation *</h4>
+                                            <div class="form-group row">
+                                                <label class="col-md-3 label-control"></label>
+                                                <div class="col-md-9 mx-auto">
+                                                    <label for="preview"><input type="radio" name="operation" id="preview" value="preview" checked> Aperçu avant validation</label>
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                    <label for="validate"><input type="radio" name="operation" id="validate" value="validate"> Validation des données</label>
+                                                </div>
+                                            </div>
+
+                                        </div>{{-- /form-body --}}
+
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="la la-check-square-o"></i> Sauvegarder
+                                            </button>
+                                            <a href="{{ route('demandes.index') }}" class="btn btn-warning">Retour</a>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Passeport Existant -->
+<div class="modal fade" id="modal-passeport-existant" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#FF4961;color:white;">
+                <h5 class="modal-title">
+                    <i class="la la-exclamation-triangle"></i>
+                    Passeport déjà enregistré dans le système
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" style="color:white;">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-passeport-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="la la-times"></i> Fermer et corriger
+                </button>
+                <a href="#" id="btn-voir-demande" class="btn btn-primary" target="_blank">
+                    <i class="la la-eye"></i> Voir la demande existante
+                </a>
+                <a href="#" id="btn-renouveler" class="btn btn-success">
+                    <i class="la la-refresh"></i> Renouveler ce titre
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@section('scripts')
+<script src="{{asset('res/app-assets/vendors/js/forms/select/select2.full.min.js')}}"></script>
+<script src="{{asset('res/app-assets/js/scripts/forms/select/form-select2.min.js')}}"></script>
+
+<script>
+$(function(){
+    // ── Selects dépendants département → arrondissement → quartier ────────────
+    $("#departements_id").on("change", function(){
+        var id = $(this).val();
+        if(id != "") { arrondissements(id, "#arrondissements_id"); }
+    });
+    $("#arrondissements_id").on("change", function(){
+        var id = $(this).val();
+        if(id != "") { quartiers(id, "#quartiers_id"); }
+    });
+
+    // ── Conjoint ──────────────────────────────────────────────────────────────
+    $(".nc").hide();
+    $("#etat_civil").on("change", function(){
+        var me   = $(this).val();
+        var sexe = $("#sexe").val();
+        if(me == "Marié(e)" && sexe == "Féminin"){
+            $(".nc").fadeIn(500);
+        } else {
+            $(".nc").fadeOut(500);
+            $("#nom_conjoint").val("");
+        }
+    });
+
+    // ── Pré-sélection département → arrondissement → quartier (prefill) ───────
+    @if(isset($impetrantPrefill) && $impetrantPrefill->departements_id)
+    var prefillDep = {{ $impetrantPrefill->departements_id }};
+    var prefillArr = {{ $impetrantPrefill->arrondissements_id ?? 'null' }};
+    var prefillQrt = {{ $impetrantPrefill->quartiers_id ?? 'null' }};
+
+    if (prefillDep) {
+        arrondissements(prefillDep, "#arrondissements_id", function(){
+            if (prefillArr) {
+                $("#arrondissements_id").val(prefillArr).trigger("change");
+                quartiers(prefillArr, "#quartiers_id", function(){
+                    if (prefillQrt) { $("#quartiers_id").val(prefillQrt); }
+                });
+            }
+        });
+    }
+    @endif
+});
+
+function arrondissements(id, div, callback){
+    var route = "{{route('departements.arrondissements','id')}}".replace("id", id);
+    var out   = "<option value=''>Selectionner</option>";
+    $.get(route, function(data){
+        if(data.length > 0){
+            for(var i=0; i < data.length; i++){
+                out += "<option value='" + data[i].id + "'>" + data[i].lib_arrondissement + "</option>";
+            }
+            $(div).empty().append(out);
+        }
+        if(typeof callback === 'function') callback();
+    });
+}
+
+function quartiers(id, div, callback){
+    var route = "{{route('arrondissements.quartiers','id')}}".replace("id", id);
+    var out   = "<option value=''>Selectionner</option>";
+    $.get(route, function(data){
+        if(data.length > 0){
+            for(var i=0; i < data.length; i++){
+                out += "<option value='" + data[i].id + "'>" + data[i].lib_quartier + "</option>";
+            }
+            $(div).empty().append(out);
+        }
+        if(typeof callback === 'function') callback();
+    });
+}
+</script>
+
+{{-- ── Lecteur passeport (inchangé) ──────────────────────────────────────── --}}
+<script>
+$(document).ready(function() {
+    var READER_URL = 'http://127.0.0.1:8085';
+
+    checkReaderStatus();
+
+    function checkReaderStatus() {
+        $.ajax({
+            url: READER_URL + '/status', method: 'GET', timeout: 2000,
+            success: function() {
+                $('#btn-lire-passeport').prop('disabled', false);
+                setStatus('success', '<i class="la la-check-circle"></i> Lecteur connecté');
+            },
+            error: function() {
+                $('#btn-lire-passeport').prop('disabled', true);
+                setStatus('warning', '<i class="la la-exclamation-triangle"></i> Service lecteur non démarré');
+            }
+        });
+    }
+
+    $('#btn-lire-passeport').on('click', function() {
+        $('#btn-lire-passeport').prop('disabled', true);
+        setStatus('info', '<i class="la la-spinner la-spin"></i> Lecture en cours... Posez le passeport');
+        $('#passport-photo-preview').hide();
+        $.ajax({
+            url: READER_URL + '/read', method: 'GET', timeout: 120000,
+            success: function(data) {
+                if (data.status === 'success') {
+                    remplirFormulaire(data);
+                } else {
+                    setStatus('warning', '<i class="la la-exclamation-triangle"></i> ' + data.message);
+                    $('#btn-lire-passeport').prop('disabled', false);
+                }
+            },
+            error: function() {
+                setStatus('danger', '<i class="la la-times-circle"></i> Service non disponible');
+                $('#btn-lire-passeport').prop('disabled', false);
+            }
+        });
+    });
+
+    function remplirFormulaire(data) {
+        if (data.nom)      $('#nom').val(data.nom);
+        if (data.prenoms)  $('#prenom').val(data.prenoms);
+        if (data.sexe)     $('#sexe').val(data.sexe === 'M' ? 'Masculin' : 'Féminin');
+        if (data.naissance) $('#date_naissance').val(data.naissance);
+        if (data.lieu_naissance && data.lieu_naissance !== '') $('#lieu_naissance').val(data.lieu_naissance);
+        if (data.profession && data.profession !== '')        $('#profession').val(data.profession);
+        if (data.telephone && data.telephone !== '')          $('#telephone').val(data.telephone);
+        if (data.num_doc)    $('#numero_passeport').val(data.num_doc);
+        if (data.expiration) $('#date_expiration_passeport').val(data.expiration);
+        if (data.lieu_emission && data.lieu_emission !== '') $('#passeport_delivre_par').val(data.lieu_emission);
+        if (data.date_emission && data.date_emission !== '') $('#date_emission_passeport').val(data.date_emission);
+        if (data.nationalite) {
+            $.get('/api/passport/pays', function(pays) {
+                var code = data.nationalite.toUpperCase();
+                if (pays[code]) {
+                    $('#nationalites_id').val(pays[code].id);
+                    if ($.fn.select2) $('#nationalites_id').trigger('change.select2');
+                    else $('#nationalites_id').trigger('change');
+                }
+            });
+        }
+        if (data.photo_base64 && data.photo_base64.length > 100) {
+            var imgSrc = 'data:image/jpeg;base64,' + data.photo_base64;
+            $('#passport-photo-img').attr('src', imgSrc);
+            $('#passport-photo-preview').show();
+            try {
+                var byteString = atob(data.photo_base64);
+                var ab = new ArrayBuffer(byteString.length);
+                var ia = new Uint8Array(ab);
+                for (var i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                var blob = new Blob([ab], {type:'image/jpeg'});
+                var file = new File([blob], 'passport_photo.jpg', {type:'image/jpeg'});
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                document.getElementById('photo').files = dt.files;
+            } catch(e) { console.log('Photo: ' + e); }
+            setStatus('success', '<i class="la la-check-circle"></i> <strong>Passeport lu !</strong> <small class="text-muted">Source: ' + data.source_photo + '</small>');
+        } else {
+            setStatus('success', '<i class="la la-check-circle"></i> Données lues.');
+        }
+        $('#btn-lire-passeport').prop('disabled', false);
+        if (typeof toastr !== 'undefined') toastr.success('Formulaire rempli automatiquement !', 'Lecteur passeport');
+    }
+
+    function setStatus(type, html) {
+        var colors = { success:'#28D094', warning:'#FF9149', danger:'#FF4961', info:'#1E9FF2' };
+        $('#passport-status').html('<span style="color:' + (colors[type]||'#333') + '">' + html + '</span>');
+    }
+});
+</script>
+
+{{-- ── Vérification passeport existant (inchangée) ────────────────────────── --}}
+<script>
+$(document).ready(function() {
+    var checkTimer = null;
+    $('#numero_passeport').on('input blur', function() {
+        var numero = $(this).val().trim();
+        if (numero.length < 5) return;
+        clearTimeout(checkTimer);
+        checkTimer = setTimeout(function() { checkPasseportExistant(numero); }, 600);
+    });
+
+    function checkPasseportExistant(numero) {
+        $.get('/api/passport/check/' + encodeURIComponent(numero), function(data) {
+            if (data.found) { afficherModalPasseport(data.demande); }
+        });
+    }
+
+    function afficherModalPasseport(d) {
+        var statut_color = {
+            "En attente d'approbation":'#FF9149','Approuvée':'#28D094',
+            'Rejetée':'#FF4961','Livrée':'#1E9FF2','Envoyée au contentieux':'#FF4961'
+        }[d.statut_demande] || '#666';
+        var photo = d.photo ?
+            '<img src="/app/'+d.photo+'" style="height:100px;border-radius:6px;border:2px solid #ddd;">' :
+            '<div style="height:100px;width:80px;background:#eee;display:flex;align-items:center;justify-content:center;border-radius:6px;"><i class="la la-user" style="font-size:2em;color:#999;"></i></div>';
+        var html = '<div class="row"><div class="col-md-2 text-center">'+photo+'</div><div class="col-md-10">'
+            +'<table class="table table-bordered table-sm">'
+            +'<tr><th width="35%">Impétrant</th><td><strong>'+(d.nom||'')+' '+(d.prenom||'')+'</strong></td></tr>'
+            +'<tr><th>Date naissance</th><td>'+(d.date_naissance||'-')+'</td></tr>'
+            +'<tr><th>Nationalité</th><td>'+(d.nationalite||'-')+'</td></tr>'
+            +'<tr><th>N° passeport</th><td><strong>'+(d.numero_document||'')+'</strong></td></tr>'
+            +'<tr><th>Type document</th><td>'+(d.type_document||'-')+'</td></tr>'
+            +'<tr><th>Émission</th><td>'+(d.date_emission||'-')+'</td></tr>'
+            +'<tr><th>Expiration</th><td>'+(d.date_expiration||'-')+'</td></tr>'
+            +'<tr><th>Type demande</th><td>'+(d.type_demande||'-')+'</td></tr>'
+            +'<tr><th>Date demande</th><td>'+(d.date_demande||'-')+'</td></tr>'
+            +'<tr><th>Statut</th><td><span style="color:'+statut_color+';font-weight:bold;">'+(d.statut_demande||'-')+'</span></td></tr>'
+            +'<tr><th>N° UUID</th><td><code>'+(d.uuid||'-')+'</code></td></tr>'
+            +'</table></div></div>'
+            +'<div class="alert alert-warning mt-1 mb-0"><i class="la la-exclamation-triangle"></i> '
+            +'Ce numéro de passeport est déjà associé à une demande. Voulez-vous renouveler ce titre ou corriger le numéro saisi ?</div>';
+        $('#modal-passeport-body').html(html);
+        $('#btn-voir-demande').attr('href', '/demandes/'+d.demande_id);
+        $('#btn-renouveler').attr('href', '/demandes/'+d.demande_id+'/renouvellement');
+        $('#modal-passeport-existant').modal('show');
+    }
+});
+</script>
+@endsection

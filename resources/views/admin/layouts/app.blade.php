@@ -15,6 +15,8 @@
     <link rel="shortcut icon" type="image/png" href="{{asset('img/apple-touch-icon.png')}}">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i%7CQuicksand:300,400,500,700" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/vendors.min.css')}}">
+    <!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
 
     <!-- BEGIN: Vendor CSS-->
     <!-- END: Vendor CSS-->
@@ -45,6 +47,16 @@
 <!-- END: Head-->
 
 <!-- BEGIN: Body-->
+@if(session('forbidden'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Accès refusé',
+        text: '{{ session("forbidden") }}',
+        confirmButtonColor: '#d33'
+    });
+</script>
+@endif
 
 <body class="vertical-layout vertical-menu-modern 2-columns   fixed-navbar" data-open="click" data-menu="vertical-menu-modern" data-col="2-columns">
 
@@ -86,6 +98,9 @@
             });
         });
     </script>
+    <!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/fr.global.min.js"></script>
 </body>
 <!-- END: Body-->
 </html>

@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Module extends Model
 {
-    use HasFactory;
+    protected $fillable = ['lib_module'];
+
+    public function fonctionnalites()
+    {
+        return $this->hasMany(Fonctionnalite::class, 'modules_id');
+    }
 }

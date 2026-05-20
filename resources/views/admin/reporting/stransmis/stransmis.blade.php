@@ -97,7 +97,7 @@
                         L’Administrateur Principal du <br>
                         Département des Migrations et du Contrôle <br>
                         des Etrangers
-                        @if($soit_transmis->users->id != 7)
+                        @if($soit_transmis->user->id != 7)
                             ,&nbsp;PO
                         @endif
                     </strong>
@@ -166,7 +166,7 @@
 
                 </td>
                 <td style="text-align: left;" class="size3">
-                    <u>{{ ucfirst($soit_transmis->users->grade->grade) }}<Strong> {{$soit_transmis->users->prenom}} {{$soit_transmis->users->nom}}</Strong> </u>
+                    <u>{{ ucfirst($soit_transmis->user->grade->grade) }}<Strong> {{$soit_transmis->user->prenom}} {{$soit_transmis->user->nom}}</Strong> </u>
                 </td>
             </tr>
         </tbody>

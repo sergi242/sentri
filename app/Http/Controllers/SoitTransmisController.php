@@ -8,6 +8,8 @@ use App\Models\Demande;
 use App\Models\SoitTransmis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SoitTransmisController extends Controller
 {
@@ -16,7 +18,182 @@ class SoitTransmisController extends Controller
         $soit_transmis = SoitTransmis::withCount('demandes as demandes_count')->orderBy('created_at', 'desc')->get();
         return view("admin.soittransmis.index", compact("soit_transmis"));
     }
+    /**
+ * Formulaire d'attribution en masse
+ */
+public function attributionMasseForm()
+{
+    $soitTransmis = SoitTransmis::with('demandes')
+        ->orderBy('created_at', 'desc')
+        ->get();
     
+    // Charger tous les utilisateurs pour les sélecteurs
+    $users = User::orderBy('nom')->orderBy('prenom')->get();
+    
+    return view('admin.soittransmis.attribution-masse', compact('soitTransmis', 'users'));
+}
+
+/**
+ * Recherche avancée de Soit-Transmis
+ */
+/**
+ * Recherche avancée de Soit-Transmis
+ */
+/**
+ * Recherche avancée de Soit-Transmis
+ */
+public function rechercheAvancee(Request $request)
+{
+    $query = SoitTransmis::with(['demandes', 'createur', 'commanditaire', 'user']);
+    
+    // Filtrer par numéro
+    if ($request->filled('numero')) {
+        $query->where('numero', 'LIKE', '%' . $request->numero . '%');
+    }
+    
+    // Filtrer par description (destination)
+    if ($request->filled('destination')) {
+        $query->where('description', 'LIKE', '%' . $request->destination . '%');
+    }
+    
+    // Filtrer par commanditaire (ID)
+    if ($request->filled('commanditaire')) {
+        $query->where('commanditaire_id', $request->commanditaire);
+    }
+    
+    // Filtrer par signataire (users_id)
+    if ($request->filled('signataire')) {
+        $query->where('users_id', $request->signataire);
+    }
+    
+    // Filtrer par date
+    if ($request->filled('date')) {
+        $query->whereDate('created_at', $request->date);
+    }
+    
+    $soitTransmis = $query->withCount('demandes')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function($st) {
+            // Calculer le nombre de demandes attribuées
+            $demandesAttribuees = $st->demandes->where('attribue', 1)->count();
+            $totalDemandes = $st->demandes->count();
+            
+            // Déterminer le statut
+            if ($totalDemandes == 0) {
+                $statut = 'vide';
+                $statutLabel = 'Aucune demande';
+                $statutColor = 'secondary';
+            } elseif ($demandesAttribuees == 0) {
+                $statut = 'non_attribue';
+                $statutLabel = 'Non attribué';
+                $statutColor = 'danger';
+            } elseif ($demandesAttribuees < $totalDemandes) {
+                $statut = 'partiel';
+                $statutLabel = "Partiel ({$demandesAttribuees}/{$totalDemandes})";
+                $statutColor = 'warning';
+            } else {
+                $statut = 'complet';
+                $statutLabel = 'Complet';
+                $statutColor = 'success';
+            }
+            
+            return [
+                'id' => $st->id,
+                'numero_soit_transmis' => $st->numero ?? 'Sans numéro',
+                'destination' => $st->description ?? 'Non défini',
+                'commanditaire' => $st->commanditaire ? $st->commanditaire->getNomPrenom() : 'Non défini',
+                'signataire_nom' => $st->user ? $st->user->getNomPrenom() : 'Non défini',
+                'demandes_count' => $totalDemandes,
+                'demandes_attribuees' => $demandesAttribuees,
+                'statut_attribution' => $statut,
+                'statut_label' => $statutLabel,
+                'statut_color' => $statutColor,
+                'date_creation' => $st->created_at->format('d/m/Y'),
+            ];
+        });
+    
+    // Filtrer par statut (après le mapping)
+    if ($request->filled('statut')) {
+        $soitTransmis = $soitTransmis->filter(function($st) use ($request) {
+            return $st['statut_attribution'] == $request->statut;
+        })->values();
+    }
+    
+    return response()->json([
+        'soitTransmis' => $soitTransmis,
+        'total' => $soitTransmis->count()
+    ]);
+}
+
+/**
+ * Récupérer les demandes d'un Soit-Transmis pour attribution
+ */
+public function getDemandesAttribution($id)
+{
+    $soitTransmis = SoitTransmis::with(['demandes.impetrant'])->findOrFail($id);
+    
+    $demandes = $soitTransmis->demandes->map(function($dem) {
+        return [
+            'id' => $dem->id,
+            'uuid' => $dem->uuid,
+            'impetrant_nom' => $dem->impetrant->nom ?? '',
+            'impetrant_prenom' => $dem->impetrant->prenom ?? '',
+            'type_demande' => $dem->type_demande,
+            'attribue' => $dem->attribue,
+            'numero_document' => $dem->numero_document,
+            'date_attribution' => $dem->date_attribution ? Carbon::parse($dem->date_attribution)->format('d/m/Y') : null,
+        ];
+    });
+    
+    return response()->json([
+        'demandes' => $demandes,
+        'total' => $demandes->count()
+    ]);
+}
+
+/**
+ * Attribuer en masse
+ */
+public function attribuerMasse(Request $request)
+{
+    $attributions = $request->input('attributions');
+    $count = 0;
+    
+    DB::beginTransaction();
+    
+    try {
+        foreach ($attributions as $attr) {
+            $demande = Demande::find($attr['demande_id']);
+            
+            if ($demande && $demande->attribue != 1) {
+                $demande->numero_document = $attr['numero_document'];
+                $demande->date_attribution = $attr['date_sortie'];
+                $demande->attribue = 1;
+                $demande->attribue_par = auth()->id();
+                $demande->save();
+                
+                $count++;
+            }
+        }
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "$count demande(s) attribuée(s) avec succès"
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Erreur attribution masse: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de l\'attribution'
+        ], 500);
+    }
+}
     public function show($id){
         $soit_transmis = SoitTransmis::find($id);
         $demandes = Demande::where("soit_transmis_id",$id)->get();
@@ -74,6 +251,7 @@ class SoitTransmisController extends Controller
             $soit_transmis->description = $request->description;
             $soit_transmis->commanditaire_id = $request->commanditaire_id;
             $soit_transmis->created_by = auth()->user()->id;
+
             $soit_transmis->save();
             $id = $soit_transmis->id;
             toastr()->success("Soit-Transmis ajouté avec succès");

@@ -735,4 +735,105 @@ class ReportingController extends Controller
         $html2pdf->writeHTML(view("admin.reporting.flux_migratoire.pdf.flux", compact("fronts", "pays", "dtone", "dtwo"))->render());
         return $html2pdf->output(time() . "temp.pdf");
     }
+
+    /**
+ * Afficher le formulaire de génération du rapport global
+ */
+public function showGlobalForm()
+{
+    // Récupérer les utilisateurs avec grade pour signataires
+    $signataires = User::whereHas('grade')
+        ->with('grade')
+        ->orderBy('nom')
+        ->get();
+
+    return view('admin.reporting.rapports.form', compact('signataires'));
+}
+
+    /**
+ * Générer le PDF du rapport global
+ */
+public function generateGlobalPDF(Request $request)
+{
+    $request->validate([
+        'date_debut' => 'required|date',
+        'date_fin' => 'required|date|after_or_equal:date_debut',
+        'signataire_id' => 'required|exists:users,id',
+        'commentaire' => 'nullable|string|max:1000',
+    ]);
+
+    $dateDebut = $request->date_debut;
+    $dateFin = $request->date_fin;
+    $signataire = User::with(['grade', 'role'])->findOrFail($request->signataire_id);
+    $commentaire = $request->commentaire;
+
+    // Total des demandes sur la période
+    $totalDemandes = Demande::whereBetween('created_at', [$dateDebut . ' 00:00:00', $dateFin . ' 23:59:59'])
+        ->count();
+
+    // Demandes par statut
+    $demandesParStatut = Demande::whereBetween('created_at', [$dateDebut . ' 00:00:00', $dateFin . ' 23:59:59'])
+        ->select('statut_demande', DB::raw('COUNT(*) as total'))
+        ->groupBy('statut_demande')
+        ->get();
+
+    // Demandes par type (CRT / Visa)
+    $demandesParType = Demande::whereBetween('created_at', [$dateDebut . ' 00:00:00', $dateFin . ' 23:59:59'])
+        ->select('type_demande', DB::raw('COUNT(*) as total'))
+        ->groupBy('type_demande')
+        ->get();
+
+    // Demandes en contentieux
+    $totalContentieux = Demande::where('statut_demande', 'LIKE', '%contentieux%')
+        ->whereBetween('created_at', [$dateDebut . ' 00:00:00', $dateFin . ' 23:59:59'])
+        ->count();
+
+    // Contentieux par motif (vide pour l'instant)
+    $contentieuxParMotif = collect();
+
+    // Soit-Transmis créés sur la période
+    $totalSoitTransmis = SoitTransmis::whereBetween('created_at', [$dateDebut . ' 00:00:00', $dateFin . ' 23:59:59'])
+        ->count();
+
+    // Nombre total de demandes dans les soit-transmis
+    $totalDemandesDansST = Demande::whereNotNull('soit_transmis_id')
+        ->whereHas('soitTransmis', function($q) use ($dateDebut, $dateFin) {
+            $q->whereBetween('created_at', [$dateDebut . ' 00:00:00', $dateFin . ' 23:59:59']);
+        })
+        ->count();
+
+    // Top 5 agents les plus actifs
+    $topAgents = User::withCount([
+            'demandes' => function($q) use ($dateDebut, $dateFin) {
+                $q->whereBetween('created_at', [$dateDebut . ' 00:00:00', $dateFin . ' 23:59:59']);
+            }
+        ])
+        ->having('demandes_count', '>', 0)
+        ->orderBy('demandes_count', 'desc')
+        ->limit(5)
+        ->get();
+
+    // Génération du PDF
+    $html = view('admin.reporting.rapports.pdf-global', compact(
+        'dateDebut',
+        'dateFin',
+        'signataire',
+        'commentaire',
+        'totalDemandes',
+        'demandesParStatut',
+        'demandesParType',
+        'totalContentieux',
+        'contentieuxParMotif',
+        'totalSoitTransmis',
+        'totalDemandesDansST',
+        'topAgents'
+    ))->render();
+
+    $html2pdf = new Html2Pdf('P', 'A4', 'fr');
+    $html2pdf->pdf->SetTitle('Rapport Global DMCE');
+    $html2pdf->writeHTML($html);
+
+    $filename = 'Rapport_Global_' . date('Y-m-d_His') . '.pdf';
+    return $html2pdf->output($filename);
+}
 }

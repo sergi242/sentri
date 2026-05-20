@@ -14,11 +14,40 @@ use Illuminate\Support\Facades\DB;
 
 class FluxMigratoireController extends Controller
 {
-    public function index(){
-        $flux = FluxMigratoire::all();
-        return view("admin.flux.index",compact("flux"));
+   public function index(Request $request)
+{
+    $query = FluxMigratoire::with(['frontiere', 'pays']);
+
+    if ($request->filled('frontiere_id')) {
+        $query->where('frontieres_id', $request->frontiere_id);
     }
 
+    if ($request->filled('pays_id')) {
+        $query->where('pays_id', $request->pays_id);
+    }
+
+    if ($request->filled('type_flux')) {
+        if ($request->type_flux === 'entree') {
+            $query->where('total_entree', '>', 0)->where('total_sortie', 0);
+        } else {
+            $query->where('total_sortie', '>', 0)->where('total_entree', 0);
+        }
+    }
+
+    if ($request->filled('date_debut')) {
+        $query->where('date_movement', '>=', $request->date_debut);
+    }
+
+    if ($request->filled('date_fin')) {
+        $query->where('date_movement', '<=', $request->date_fin);
+    }
+
+    $flux       = $query->orderBy('date_movement', 'desc')->get();
+    $frontieres = \App\Models\FrontiereCongo::orderBy('lib_frontiere')->get();
+    $pays       = \App\Models\Pays::orderBy('lib_pays')->get();
+
+    return view('admin.flux.index', compact('flux', 'frontieres', 'pays'));
+}
     public function create(){
         $frontieres = FrontiereCongo::all();
         $departements = Departement::all();

@@ -2,23 +2,44 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SoitTransmis extends Model
 {
     use HasFactory;
-    use SoftDeletes;
+    
     protected $guarded = [];
-
-    public function demandes() {
-        return $this->hasMany(Demande::class);
+    
+    /**
+     * Relation avec les demandes
+     */
+    public function demandes()
+    {
+        return $this->hasMany(Demande::class, 'soit_transmis_id');
     }
-    public function users() {
-        return $this->belongsTo(User::class);
+    
+    /**
+     * Relation avec l'utilisateur créateur
+     */
+    public function createur()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
-    public function commanditaire() {
-        return $this->belongsTo(User::class);
+    
+    /**
+     * Relation avec le commanditaire (utilisateur)
+     */
+    public function commanditaire()
+    {
+        return $this->belongsTo(User::class, 'commanditaire_id');
+    }
+    
+    /**
+     * Relation avec l'utilisateur assigné (users_id)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'users_id');
     }
 }

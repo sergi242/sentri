@@ -44,6 +44,8 @@
                                                 <select name="type" class="form-control" id="subject" class="form-select">
                                                     <option value="Personne morale">Personne morale</option>
                                                     <option value="Personne physique">Personne physique</option>
+                                                    <option value="diplomate">Diplomate</option>
+
                                                 </select>
                                                 @error('employeur')
                                                 <div class="invalid-feedback">

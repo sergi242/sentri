@@ -36,15 +36,27 @@ class RoleController extends Controller
 
     }
 
-    public function edit($id){
-        $role = Role::find($id);
-        $fonctionnalites = Fonctionnalite::whereNull("fonctionnalite_parent")->get();
-        if($role == null){
-            toastr()->error("Impossible de traiter cette requête");
-            return back();
-        }
-        return view("admin.role.edit",compact("role","fonctionnalites"));
+    public function edit($id)
+{
+    $role = Role::find($id);
+    
+    if($role == null){
+        toastr()->error("Impossible de traiter cette requête");
+        return back();
     }
+    
+    // Récupérer tous les modules
+    $modules = \App\Models\Module::orderBy('id')->get();
+    
+    // Récupérer toutes les fonctionnalités groupées par module
+    $fonctionnalitesByModule = \App\Models\Fonctionnalite::with('module')
+        ->orderBy('modules_id')
+        ->orderBy('lib_fonctionnalite')
+        ->get()
+        ->groupBy('modules_id');
+    
+    return view("admin.role.edit", compact("role", "modules", "fonctionnalitesByModule"));
+}
 
     public function update(Request $request,$id){
         $role = Role::find($id);

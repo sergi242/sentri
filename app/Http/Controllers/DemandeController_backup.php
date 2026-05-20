@@ -417,6 +417,26 @@ class DemandeController extends Controller
 
             $demande->save();
 
+            // --- DÉBUT LOGIQUE ALERTE ---
+        $match = \App\Models\Watchlist::searchMatch($request->all());
+
+        DB::commit();
+
+        if ($match) {
+            // On utilise la session pour passer l'alerte à la vue suivante
+            session()->flash('watchlist_alert', [
+                'motif' => $match->motif_alerte,
+                'niveau' => $match->niveau_danger,
+                'cible' => ($match->nom ?? '') . ' ' . ($match->prenom ?? '')
+            ]);
+        }
+
+        toastr()->success("Demande enregistrée avec succès");
+        return redirect()->route("demandes.index");
+
+    } catch (Exception $e) {
+        DB::rollBack();
+
             //pieces
 
             if($request->justificatifs != null){

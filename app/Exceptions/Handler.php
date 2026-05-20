@@ -7,39 +7,14 @@ use Throwable;
 
 class Handler extends ExceptionHandler
 {
-    /**
-     * The list of the inputs that are never flashed to the session on validation exceptions.
-     *
-     * @var array<int, string>
-     */
     protected $dontFlash = [
         'current_password',
         'password',
         'password_confirmation',
     ];
 
-    /**
-     * Register the exception handling callbacks for the application.
-     */
-    public function render ($request, Throwable $exception)
-
-    {
-        if ($exception instanceof AuthorizationException)
-        {
-            if ($request->expectsJson()=== false){
-                return redirect()->back()->with
-                ('error',"Vous n'avez pas les accreditation necessaire");
-                
-            }
-            
-        }
-        return parent::render($request,$exception);
-
-    }
     public function register(): void
     {
-        $this->reportable(function (Throwable $e) {
-            //
-        });
+        //
     }
 }
