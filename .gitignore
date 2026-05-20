@@ -23,3 +23,6 @@ environnement
 *.sql
 *.zip
 dmce*.sql
+storage/framework/sessions/*
+*.bak
+*.bak_*
