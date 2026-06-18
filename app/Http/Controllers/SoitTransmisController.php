@@ -348,7 +348,7 @@ public function attribuerMasse(Request $request)
             $derniersChiffres = substr($dernierSoitTransmis->numero, -3);
         
             // Convertir en entier et incrémenter
-            $numeroProduction = $derniersChiffres + 1;
+            $numeroProduction = (int)$derniersChiffres + 1;
         
             // Si le numéro de production dépasse 999 
             if ($numeroProduction > 999) {

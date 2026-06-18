@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Str;
+
 use App\Models\Demande;
 use App\Models\Impetrant;
 use Illuminate\Http\Request;

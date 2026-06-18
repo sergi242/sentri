@@ -185,6 +185,8 @@ Route::middleware(['auth', 'license'])->group(function () {
             Route::get('create',              'create')              ->name('users.create')        ->middleware('can:users.create');
             Route::get('change-password',     'change_password_form')->name('users.password.form');
             Route::get('report',              'exportReportPdf')     ->name('users.report.pdf');
+            Route::get('liste-pdf',            'listePdf')     ->name('users.liste-pdf')     ->middleware('can:users.view');
+
             Route::post('store',              'store')               ->name('users.store')         ->middleware('can:users.create');
             Route::put('change-password',     'change_password')     ->name('users.changepassword');
             Route::get('{id}/show',           'show')                ->name('users.show')          ->middleware('can:users.view');
@@ -192,6 +194,8 @@ Route::middleware(['auth', 'license'])->group(function () {
             Route::put('{id}/update',         'update')              ->name('users.update')        ->middleware('can:users.edit');
             Route::delete('{id}/destroy',     'destroy')             ->name('users.destroy')       ->middleware('can:users.destroy');
             Route::put('{id}/reset-password', 'resetPassword')       ->name('users.reset-password');
+            Route::put('{id}/toggle-active',   'toggleActive') ->name('users.toggle-active') ->middleware('can:users.edit');
+
             Route::get('{id}/activities/pdf', 'exportUserActivitiesPdf')->name('users.activities.pdf')->middleware('can:users.view');
         });
     });
@@ -614,7 +618,7 @@ Route::post('/license/grace', function (\Illuminate\Http\Request $request) {
         return back()->with('grace_error', 'La période de grâce a déjà été utilisée. Contactez l\'administrateur.');
     }
 
-    $license->expires_at = now()->addDays(2);
+    $license->expires_at = now()->addDays(3);
     $license->status = 'active';
     $license->grace_used = 1;
     $license->grace_used_at = now();
@@ -623,3 +627,105 @@ Route::post('/license/grace', function (\Illuminate\Http\Request $request) {
 
     return redirect('/')->with('success', 'Période de grâce de 48h activée.');
 })->name('license.grace');
+
+// ACTIVATION LICENCE DEPUIS PAGE DE BLOCAGE
+Route::post('/license/activate-client', function (\Illuminate\Http\Request $request) {
+    $key = strtoupper(trim($request->license_key));
+
+    if (!$key) {
+        return back()->with('activate_error', 'Veuillez saisir une clé de licence.');
+    }
+
+    // 1. Vérification algorithmique mensuelle
+    $algoCheck = \App\Services\LicenseService::verifyKeyAlgorithm($key);
+    if (!$algoCheck['valid']) {
+        return back()->with('activate_error', $algoCheck['reason']);
+    }
+
+    // 2. Chercher en DB
+    $license = \App\Models\License::where('license_key_display', $key)->first();
+
+    if (!$license) {
+        // Enregistrer automatiquement la nouvelle clé
+        $license = \App\Models\License::registerKey($key, 30, 'DMCE');
+    }
+
+    if ($license->status === 'active' && $license->expires_at && now()->lt($license->expires_at)) {
+        // Déjà active — juste mettre à jour le .env et le cache
+        \App\Services\LicenseService::saveKeyToEnv($key);
+        \Illuminate\Support\Facades\Cache::forget('dmce_license_validation');
+        return redirect('/')->with('success', 'Licence déjà active — accès restauré.');
+    }
+
+    if (!in_array($license->status, ['pending', 'expired'])) {
+        return back()->with('activate_error', 'Cette clé est invalide ou révoquée.');
+    }
+
+    // 3. Activer
+    $deviceId   = \App\Services\LicenseService::getDeviceId();
+    $deviceName = php_uname('n');
+    $deviceIp   = $request->ip();
+
+    $result = $license->activate($deviceId, $deviceName, $deviceIp);
+
+    if (!$result['success']) {
+        return back()->with('activate_error', $result['message']);
+    }
+
+    // 4. Sauvegarder dans .env + vider cache
+    \App\Services\LicenseService::saveKeyToEnv($key);
+    \Illuminate\Support\Facades\Cache::forget('dmce_license_validation');
+
+    return redirect('/')->with('success', 'Licence activée ! Bienvenue sur DMCE.');
+})->name('license.activate-client');
+
+Route::post('/license/activate-client', function (\Illuminate\Http\Request $request) {
+    $key = strtoupper(trim($request->license_key));
+    if (!$key) {
+        return back()->with('activate_error', 'Veuillez saisir une clé de licence.');
+    }
+    $algoCheck = \App\Services\LicenseService::verifyKeyAlgorithm($key);
+    if (!$algoCheck['valid']) {
+        return back()->with('activate_error', $algoCheck['reason']);
+    }
+    $license = \App\Models\License::where('license_key_display', $key)->first();
+    if (!$license) {
+        $license = \App\Models\License::registerKey($key, 30, 'DMCE BRAZZAVILLE');
+    }
+    if ($license->status === 'active' && $license->expires_at && now()->lt($license->expires_at)) {
+        \App\Services\LicenseService::saveKeyToEnv($key);
+        \Illuminate\Support\Facades\Cache::forget('dmce_license_validation');
+        return redirect('/')->with('success', 'Licence déjà active — accès restauré.');
+    }
+    if (!in_array($license->status, ['pending', 'expired'])) {
+        return back()->with('activate_error', 'Cette clé est invalide ou révoquée.');
+    }
+    $result = $license->activate(
+        \App\Services\LicenseService::getDeviceId(),
+        php_uname('n'),
+        $request->ip()
+    );
+    if (!$result['success']) {
+        return back()->with('activate_error', $result['message']);
+    }
+    \App\Services\LicenseService::saveKeyToEnv($key);
+    \Illuminate\Support\Facades\Cache::forget('dmce_license_validation');
+    return redirect('/')->with('success', 'Licence activée ! Bienvenue sur DMCE.');
+})->name('license.activate-client');
+
+// SYSTÈME BOOTSTRAP
+Route::get('/system/blocked', function () {
+    $info = \App\Foundation\SystemBootstrap::getEmergencyInfo();
+    $error_code = session('error_code', cache('_sys_error_code', 'E000'));
+    return view('system.blocked', compact('info', 'error_code'));
+})->name('system.blocked');
+
+Route::post('/system/unlock', function (\Illuminate\Http\Request $request) {
+    $result = \App\Foundation\SystemBootstrap::applyEmergencyUnlock(
+        strtoupper(trim($request->unlock_code))
+    );
+    if (!$result['success']) {
+        return back()->with('unlock_error', $result['message']);
+    }
+    return redirect('/')->with('success', 'Système débloqué pour 24h.');
+})->name('system.unlock');

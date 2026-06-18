@@ -97,7 +97,7 @@
                         L’Administrateur Principal du <br>
                         Département des Migrations et du Contrôle <br>
                         des Etrangers
-                        @if($soit_transmis->user->id != 7)
+                        @if($soit_transmis->user->id != 56)
                             ,&nbsp;PO
                         @endif
                     </strong>

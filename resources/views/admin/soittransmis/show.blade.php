@@ -66,7 +66,7 @@
 *                                                       <td>
                                                             <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-start;">
                                                                 <!-- Bouton pour ouvrir le modal -->
-                                                                 @if(auth()->user()->role?->lib_role === 'SuperAdmin' || auth()->user()->role?->lib_role === 'Opérateur de saisie')
+                                                                 @if(auth()->user()->role?->lib_role === 'Admin' || auth()->user()->role?->lib_role === 'SuperAdmin' || auth()->id() === 20)
                                                                     <button type="button" class="btn btn-sm btn-danger" onclick="openModal({{ $demande->id }})">
                                                                     <i class="la la-trash-o"></i> Retirer
                                                                 </button>

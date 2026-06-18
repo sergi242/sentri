@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
 use Carbon\Carbon;
 
 class License extends Model
 {
     use SoftDeletes;
+
+    protected $connection = 'vault';
 
     protected $fillable = [
         'license_key',
@@ -31,65 +32,107 @@ class License extends Model
         'last_validated_at',
         'last_validated_ip',
         'validation_count',
+        'grace_used',
+        'grace_used_at',
     ];
 
     protected $casts = [
-        'features' => 'array',
-        'activated_at' => 'datetime',
-        'expires_at' => 'datetime',
-        'last_validated_at' => 'datetime',
+        'features'         => 'array',
+        'activated_at'     => 'datetime',
+        'expires_at'       => 'datetime',
+        'last_validated_at'=> 'datetime',
+        'grace_used_at'    => 'datetime',
+        'grace_used'       => 'boolean',
     ];
 
     protected $hidden = ['license_key'];
 
-    // Relation
+    // ============================================================
+    // EVENEMENTS MODELE
+    // ============================================================
+
+    /**
+     * A chaque fois que expires_at change (activation, prolongation,
+     * periode de grace - peu importe le chemin), on resynchronise
+     * automatiquement les 10 fichiers de quorum de licence avec la
+     * nouvelle date. Echec silencieux (logge seulement) pour ne
+     * jamais bloquer le flux d'activation/grace.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (self $license) {
+            if (!$license->wasChanged('expires_at') || !$license->expires_at) {
+                return;
+            }
+
+            try {
+                $current  = $license->expires_at->copy();
+                $duration = $license->duration_days ?: 30;
+                $next     = $current->copy()->addDays($duration);
+
+                app(\App\Services\LicenseDateQuorumService::class)->write($current, $next);
+
+                \Illuminate\Support\Facades\Log::info('[QuorumLicence] Quorum resynchronise automatiquement', [
+                    'current_expiry' => $current->toDateString(),
+                    'next_expiry'    => $next->toDateString(),
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[QuorumLicence] Echec de resynchronisation automatique', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+    }
+
+    // ============================================================
+    // RELATION
+    // ============================================================
+
     public function validations()
     {
         return $this->hasMany(LicenseValidation::class);
     }
 
-    /**
-     * Générer UNE clé (sans l'activer)
-     * Cette clé est en attente jusqu'à activation manuelle
-     */
-    public static function generateKey($durationDays = 30, $organizationName = null)
+    // ============================================================
+    // ENREGISTRER UNE CLÉ (générée sur le PC du développeur)
+    // La génération réelle se fait via dmce_keygen.php en local.
+    // Cette méthode insère simplement la clé en DB en attente.
+    // ============================================================
+
+    public static function registerKey(string $keyDisplay, int $durationDays = 30, ?string $organizationName = null): self
     {
-        $year = date('Y');
-        $random1 = strtoupper(Str::random(5));
-        $random2 = strtoupper(Str::random(5));
-        $random3 = strtoupper(Str::random(5));
-        
-        $keyDisplay = "DMCE-{$year}-{$random1}-{$random2}-{$random3}";
+        // Vérifier que la clé n'existe pas déjà
+        $existing = self::where('license_key_display', $keyDisplay)->first();
+        if ($existing) {
+            return $existing;
+        }
+
         $keyEncrypted = Crypt::encryptString($keyDisplay);
-        
-        // La clé est créée mais NON ACTIVÉE
-        $license = self::create([
-            'license_key' => $keyEncrypted,
-            'license_key_display' => $keyDisplay,
-            'duration_days' => $durationDays,
-            'status' => 'pending',
-            'organization_name' => $organizationName,
-            'features' => [
-                'users' => true,
-                'demandes' => true,
-                'watchlist' => true,
-                'reports' => true,
-                'api' => true,
-                'impetrants' => true,
-                'flux_migratoires' => true,
+
+        return self::create([
+            'license_key'          => $keyEncrypted,
+            'license_key_display'  => $keyDisplay,
+            'duration_days'        => $durationDays,
+            'status'               => 'pending',
+            'organization_name'    => $organizationName,
+            'grace_used'           => false,
+            'features'             => [
+                'users'           => true,
+                'demandes'        => true,
+                'watchlist'       => true,
+                'reports'         => true,
+                'api'             => true,
+                'impetrants'      => true,
+                'flux_migratoires'=> true,
             ],
         ]);
-
-        return $license;
     }
 
-    /**
-     * Activer une clé (première utilisation)
-     * - Lie au device
-     * - Calcule expiration
-     * - Enregistre dans .env
-     */
-    public function activate($deviceId, $deviceName, $deviceIp)
+    // ============================================================
+    // ACTIVER UNE CLÉ (première utilisation sur le serveur)
+    // ============================================================
+
+    public function activate(string $deviceId, string $deviceName, string $deviceIp): array
     {
         if ($this->status !== 'pending') {
             return [
@@ -98,159 +141,91 @@ class License extends Model
             ];
         }
 
-        // Vérifier expiration
-        if ($this->expires_at && $this->expires_at->isPast()) {
-            return [
-                'success' => false,
-                'message' => 'Clé expirée',
-            ];
-        }
-
-        // Activer
         $expiresAt = now()->addDays($this->duration_days);
 
         $this->update([
-            'status' => 'active',
-            'device_id' => $deviceId,
-            'device_name' => $deviceName,
-            'device_ip' => $deviceIp,
-            'activated_at' => now(),
-            'expires_at' => $expiresAt,
+            'status'            => 'active',
+            'device_id'         => $deviceId,
+            'device_name'       => $deviceName,
+            'device_ip'         => $deviceIp,
+            'activated_at'      => now(),
+            'expires_at'        => $expiresAt,
             'last_validated_at' => now(),
         ]);
 
-        // Logger
         $this->validations()->create([
             'ip_address' => $deviceIp,
-            'action' => 'activate',
-            'success' => true,
-            'details' => "Activée sur {$deviceName}",
+            'action'     => 'activate',
+            'success'    => true,
+            'details'    => "Activée sur {$deviceName}",
         ]);
 
         return [
-            'success' => true,
-            'message' => 'Licence activée avec succès',
-            'license' => $this,
+            'success'    => true,
+            'message'    => 'Licence activée avec succès',
+            'license'    => $this,
             'expires_at' => $expiresAt,
         ];
     }
 
-    /**
-     * Valider une licence à l'authentification
-     */
-    public static function validateKey($keyDisplay, $deviceId)
-    {
-        $license = self::where('license_key_display', $keyDisplay)->first();
+    // ============================================================
+    // RÉVOQUER
+    // ============================================================
 
-        if (!$license) {
-            return [
-                'valid' => false,
-                'reason' => 'Licence non trouvée',
-            ];
-        }
-
-        // Vérifier le device (STRICT)
-        if ($license->device_id !== $deviceId) {
-            return [
-                'valid' => false,
-                'reason' => 'Cette licence est liée à un autre ordinateur (' . substr($license->device_id, 0, 16) . '...)',
-                'license_id' => $license->id,
-            ];
-        }
-
-        // Vérifier le statut
-        if ($license->status !== 'active') {
-            return [
-                'valid' => false,
-                'reason' => 'Licence inactive, révoquée ou déjà utilisée',
-            ];
-        }
-
-        // Vérifier l'expiration
-        if ($license->expires_at && $license->expires_at->isPast()) {
-            $license->update(['status' => 'expired']);
-            
-            return [
-                'valid' => false,
-                'reason' => 'Licence expirée le ' . $license->expires_at->format('d/m/Y'),
-                'expires_at' => $license->expires_at,
-            ];
-        }
-
-        // ✅ Valide !
-        $license->increment('validation_count');
-        $license->update([
-            'last_validated_at' => now(),
-            'last_validated_ip' => request()->ip(),
-        ]);
-
-        // Logger
-        $license->validations()->create([
-            'ip_address' => request()->ip(),
-            'action' => 'validate',
-            'success' => true,
-        ]);
-
-        return [
-            'valid' => true,
-            'license' => $license,
-            'days_remaining' => $license->expires_at->diffInDays(now()),
-        ];
-    }
-
-    /**
-     * Révoquer une licence
-     */
-    public function revoke($reason = null)
+    public function revoke(?string $reason = null): bool
     {
         $this->update([
             'status' => 'revoked',
-            'notes' => $reason,
+            'notes'  => $reason,
         ]);
 
         $this->validations()->create([
-            'ip_address' => request()->ip(),
-            'action' => 'revoke',
-            'success' => true,
-            'details' => $reason,
+            'ip_address' => request()->ip() ?? 'cli',
+            'action'     => 'revoke',
+            'success'    => true,
+            'details'    => $reason,
         ]);
 
         return true;
     }
 
-    /**
-     * Prolonger une licence
-     */
-    public function extend($additionalDays = 30)
+    // ============================================================
+    // PROLONGER
+    // ============================================================
+
+    public function extend(int $additionalDays = 30): array
     {
         $newExpiresAt = $this->expires_at->addDays($additionalDays);
 
         $this->update([
             'expires_at' => $newExpiresAt,
+            'status'     => 'active',
         ]);
 
         return [
-            'success' => true,
+            'success'        => true,
             'new_expires_at' => $newExpiresAt,
         ];
     }
 
-    /**
-     * Obtenir les infos
-     */
-    public function getInfo()
+    // ============================================================
+    // INFOS
+    // ============================================================
+
+    public function getInfo(): array
     {
         return [
-            'key_display' => $this->license_key_display,
-            'organization' => $this->organization_name,
-            'device_name' => $this->device_name,
-            'device_id' => substr($this->device_id, 0, 16) . '...',
-            'status' => $this->status,
-            'activated_at' => $this->activated_at,
-            'expires_at' => $this->expires_at,
-            'days_remaining' => $this->expires_at ? $this->expires_at->diffInDays(now()) : 0,
+            'key_display'      => $this->license_key_display,
+            'organization'     => $this->organization_name,
+            'device_name'      => $this->device_name,
+            'device_id'        => $this->device_id ? substr($this->device_id, 0, 16) . '...' : 'N/A',
+            'status'           => $this->status,
+            'activated_at'     => $this->activated_at?->format('d/m/Y H:i'),
+            'expires_at'       => $this->expires_at?->format('d/m/Y H:i'),
+            'days_remaining'   => $this->expires_at ? max(0, (int) now()->diffInDays($this->expires_at, false)) : 0,
             'validation_count' => $this->validation_count,
-            'features' => $this->features,
+            'grace_used'       => $this->grace_used,
+            'features'         => $this->features,
         ];
     }
 }

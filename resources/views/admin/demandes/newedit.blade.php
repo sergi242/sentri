@@ -1,23 +1,6 @@
 @extends('admin.layouts.app')
 @section('title')
     Nouvelle demande CRT
-<div class="modal-body" id="modal-passeport-body">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="la la-times"></i> Fermer et corriger
-                </button>
-                <a href="#" id="btn-voir-demande" class="btn btn-primary" target="_blank">
-                    <i class="la la-eye"></i> Voir la demande existante
-                </a>
-                <a href="#" id="btn-renouveler" class="btn btn-success">
-                    <i class="la la-refresh"></i> Renouveler ce titre
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
 @endsection
 @section('styles')
     <link rel="stylesheet" href="{{asset('res/app-assets/vendors/css/forms/selects/select2.min.css')}}">
@@ -114,10 +97,45 @@
                                                     </div>
                                                 </div>
 
-                                                @include('admin.demandes.partials._bloc_passeport', ['colLabel'=>'col-md-4','colField'=>'col-md-8'])
+                                                {{-- ── Bloc passeport : partial + données existantes passées pour préremplissage ── --}}
+                                                @include('admin.demandes.partials._bloc_passeport', [
+                                                    'colLabel'            => 'col-md-4',
+                                                    'colField'            => 'col-md-8',
+                                                    'val_type_document'   => old('type_document',         $demande->document?->type_document),
+                                                    'val_numero'          => old('numero_passeport',       $demande->document?->numero_document),
+                                                    'val_date_emission'   => old('date_emission_passeport',$demande->document?->date_emission),
+                                                    'val_date_expiration' => old('date_expiration_passeport',$demande->document?->date_expiration),
+                                                    'val_delivre_par'     => old('passeport_delivre_par',  $demande->document?->emis_par),
+                                                    'val_mrz'             => old('h_mrz',                  $demande->document?->mrz        ?? ''),
+                                                    'val_source_doc'      => old('h_source_doc',           $demande->document?->source_doc ?? 'manuel'),
+                                                ])
+
+                                                {{-- ── Quittance ── --}}
+                                                <h4 class="form-section"><i class="la la-money"></i> Quittance</h4>
+                                                <div class="form-group row">
+                                                    <label class="col-md-4 label-control" for="numero_quittance">Numéro quittance</label>
+                                                    <div class="col-md-8 mx-auto">
+                                                        <input type="text" id="numero_quittance" name="numero_quittance"
+                                                            class="form-control @error('numero_quittance') is-invalid @enderror"
+                                                            placeholder="Numéro de quittance"
+                                                            value="{{ old('numero_quittance', $demande->numero_quittance) }}">
+                                                        @error('numero_quittance')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row">
+                                                    <label class="col-md-4 label-control" for="date_quittance">Date quittance</label>
+                                                    <div class="col-md-8 mx-auto">
+                                                        <input type="date" id="date_quittance" name="date_quittance"
+                                                            class="form-control @error('date_quittance') is-invalid @enderror"
+                                                            value="{{ old('date_quittance', $demande->date_quittance) }}">
+                                                        @error('date_quittance')<div class="invalid-feedback">{{$message}}</div>@enderror
+                                                    </div>
+                                                </div>
+                                              
+
 <h4 class="form-section"><i class="ft-file"></i> Information sur la demande</h4>
                                                 <div class="form-group row">
-                                                    <label class="col-md-4" for="uuid">Numéro fiche demande *</label>
+                                                    <label class="col-md-4 label-control" for="uuid">Numéro fiche demande *</label>
                                                     <div class="col-md-8 mx-auto">
                                                         <input type="text" name="uuid" id="uuid" class="form-control @error('uuid') is-invalid @enderror" value="{{$demande->uuid}}">
                                                         @error('uuid')<div class="invalid-feedback">{{$message}}</div>@enderror
@@ -324,14 +342,14 @@
                                                         </div>
                                                     </div>
                                                     <div class="form-group row">
-                                                        <label class="col-md-4 label-control" for="email">Email *</label>
+                                                        <label class="col-md-4 label-control" for="email">Email <small class="text-muted">(facultatif)</small></label>
                                                         <div class="col-md-8 mx-auto">
-                                                            <input type="text" id="email" class="form-control @error('email') is-invalid @enderror" value="{{$demande->email}}" name="email" placeholder="Email" required>
+                                                            <input type="text" id="email" class="form-control @error('email') is-invalid @enderror" value="{{$demande->email}}" name="email" placeholder="Email">
                                                             @error('email')<div class="invalid-feedback">{{$message}}</div>@enderror
                                                         </div>
                                                     </div>
                                                     <div class="form-group row">
-                                                        <label class="col-md-4 label-control" for="photo">Photo *</label>
+                                                        <label class="col-md-4 label-control" for="photo">Photo <small class="text-muted">(facultatif)</small></label>
                                                         <div class="col-md-8 mx-auto">
                                                             <input type="file" id="photo" class="form-control @error('photo') is-invalid @enderror" name="photo" accept="image/*">
                                                             @error('photo')<div class="invalid-feedback">{{$message}}</div>@enderror
@@ -514,7 +532,6 @@
 $(document).ready(function() {
     var READER_URL = 'http://127.0.0.1:8085';
 
-    // Vérifier statut au chargement
     $.ajax({
         url: READER_URL + '/status',
         method: 'GET',
@@ -529,7 +546,6 @@ $(document).ready(function() {
         }
     });
 
-    // Clic sur le bouton
     $('#btn-lire-passeport').on('click', function() {
         $('#btn-lire-passeport').prop('disabled', true);
         setStatus('info', '<i class="la la-spinner la-spin"></i> Lecture en cours... Posez le passeport sur le lecteur');
@@ -561,7 +577,6 @@ $(document).ready(function() {
     });
 
     function remplirFormulaire(data) {
-        // Identité
         if (data.nom)      $('#nom').val(data.nom);
         if (data.prenoms)  $('#prenom').val(data.prenoms);
         if (data.sexe) {
@@ -576,24 +591,17 @@ $(document).ready(function() {
         if (data.telephone && data.telephone !== '')
             $('#telephone').val(data.telephone);
 
-        // Passeport
         if (data.num_doc)    $('#numero_passeport').val(data.num_doc);
-        // ── Champs cachés pour sauvegarde impetrant_documents ─────────────
         if (data.mrz)       $('#h_mrz').val(data.mrz);
         $('#h_source_doc').val(data.num_doc ? 'lecteur' : 'manuel');
-        // Déclencher la vérification doublon document existant
         if (data.num_doc)   $('#numero_passeport').trigger('input');
-        // ──────────────────────────────────────────────────────────────────
         if (data.expiration) $('#date_expiration_passeport').val(data.expiration);
         if (data.lieu_emission && data.lieu_emission !== '')
             $('#passeport_delivre_par').val(data.lieu_emission);
-
-        // Date émission depuis Java (déjà calculée)
         if (data.date_emission && data.date_emission !== '') {
             $('#date_emission_passeport').val(data.date_emission);
         }
 
-        // Nationalité via API Laravel (code_iso 3 lettres)
         if (data.nationalite) {
             $.get('/api/passport/pays', function(pays) {
                 var code = data.nationalite.toUpperCase();
@@ -605,7 +613,6 @@ $(document).ready(function() {
             });
         }
 
-        // Photo biométrique
         if (data.photo_base64 && data.photo_base64.length > 100) {
             var imgSrc = 'data:image/jpeg;base64,' + data.photo_base64;
             $('#passport-photo-img').attr('src', imgSrc);
@@ -634,8 +641,6 @@ $(document).ready(function() {
             toastr.success('Formulaire rempli automatiquement !', 'Lecteur passeport');
     }
 
-
-    // Bouton réinitialiser lecteur
     $('#btn-restart-lecteur').on('click', function() {
         $('#btn-restart-lecteur').prop('disabled', true);
         setStatus('info', '<i class="la la-refresh la-spin"></i> Reinitialisation...');
@@ -665,17 +670,14 @@ $(document).ready(function() {
 // ===== FIN LECTEUR PASSEPORT =====
 </script>
 
-
 <script>
 // ===== VERIFICATION PASSEPORT EXISTANT =====
 $(document).ready(function() {
-
     var checkTimer = null;
 
     $('#numero_passeport').on('input blur', function() {
         var numero = $(this).val().trim();
         if (numero.length < 5) return;
-
         clearTimeout(checkTimer);
         checkTimer = setTimeout(function() {
             checkPasseportExistant(numero);
@@ -684,7 +686,7 @@ $(document).ready(function() {
 
     function checkPasseportExistant(numero) {
         $.get('/api/passport/check/' + encodeURIComponent(numero), function(data) {
-            if (data.found) {
+            if (data.found && data.demande && data.demande.demande_id != {{ $demande->id }}) {
                 afficherModalPasseport(data.demande);
             }
         });

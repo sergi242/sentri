@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Exception;
 use App\Models\Role;
+use App\Traits\HasPerformanceOptimization;
 use App\Models\User;
 use App\Models\Grade;
 use App\Models\Demande;
@@ -21,6 +22,8 @@ use App\Models\SoitTransmis;
 
 class UserController extends Controller
 {
+    use HasPerformanceOptimization;
+
     use ThrottlesLogins;
 
     // ---------------------------------------------------------------
@@ -90,9 +93,33 @@ class UserController extends Controller
     // CRUD Utilisateurs
     // ---------------------------------------------------------------
 
-    public function index(){
-        $users = User::all();
-        return view("admin.users.index", compact("users"));
+    public function index(Request $request)
+    {
+        $query = User::with(['role', 'grade'])->orderBy('nom');
+
+        if ($request->filled('roles_id')) {
+            $query->where('roles_id', $request->roles_id);
+        }
+        if ($request->filled('grades_id')) {
+            $query->where('grades_id', $request->grades_id);
+        }
+        if ($request->filled('active') && $request->active !== '') {
+            $query->where('active', (int) $request->active);
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('nom',    'like', "%$s%")
+                  ->orWhere('prenom', 'like', "%$s%")
+                  ->orWhere('email',  'like', "%$s%");
+            });
+        }
+
+        $users  = $query->get();
+        $roles  = $this->getRolesAutorisés();
+        $grades = Grade::orderBy('grade')->get();
+
+        return view("admin.users.index", compact("users", "roles", "grades"));
     }
 
     public function create(){
@@ -267,6 +294,103 @@ class UserController extends Controller
     // ---------------------------------------------------------------
     // Authentification
     // ---------------------------------------------------------------
+
+    // ---------------------------------------------------------------
+    // Toggle actif / inactif
+    // ---------------------------------------------------------------
+    public function toggleActive($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            toastr()->error("Utilisateur introuvable");
+            return back();
+        }
+        if ($user->id === Auth::id()) {
+            toastr()->error("Vous ne pouvez pas modifier l'état de votre propre compte.");
+            return back();
+        }
+        if (!$this->authIsSuperAdmin() && $user->role->lib_role === 'SuperAdmin') {
+            toastr()->error("Vous n'êtes pas autorisé à modifier l'état d'un SuperAdmin.");
+            return back();
+        }
+
+        try {
+            $user->active = $user->active ? 0 : 1;
+            $user->save();
+            $label = $user->active ? 'activé' : 'désactivé';
+            toastr()->success("Le compte de {$user->getNomPrenom()} a été {$label}.");
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            toastr()->error("Erreur lors de la mise à jour.");
+        }
+
+        return back();
+    }
+
+    // ---------------------------------------------------------------
+    // PDF liste agents
+    // ---------------------------------------------------------------
+    public function listePdf(Request $request)
+    {
+        $query = User::with(['role', 'grade'])->orderBy('nom');
+
+        if ($request->filled('roles_id')) {
+            $query->where('roles_id', $request->roles_id);
+        }
+        if ($request->filled('grades_id')) {
+            $query->where('grades_id', $request->grades_id);
+        }
+        if ($request->filled('active') && $request->active !== '') {
+            $query->where('active', (int) $request->active);
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('nom',    'like', "%$s%")
+                  ->orWhere('prenom', 'like', "%$s%")
+                  ->orWhere('email',  'like', "%$s%");
+            });
+        }
+        if ($request->filled('ids')) {
+            $ids = array_filter(array_map('intval', explode(',', $request->ids)));
+            if (!empty($ids)) {
+                $query->whereIn('id', $ids);
+            }
+        }
+
+        $users       = $query->get();
+        $filtreLabel = $this->buildFiltreLabel($request);
+        $dateGen     = now()->setTimezone('Africa/Brazzaville')->isoFormat('D MMMM YYYY [à] HH:mm');
+
+        $html = view('admin.users.liste_pdf', compact('users', 'filtreLabel', 'dateGen'))->render();
+
+        $html2pdf = new Html2Pdf('P', 'A4', 'fr');
+        $html2pdf->setDefaultFont('Times');
+        $html2pdf->writeHTML($html);
+
+        return $html2pdf->output('liste_agents_' . date('Ymd') . '.pdf', 'I');
+    }
+
+    private function buildFiltreLabel(Request $request): string
+    {
+        $parts = [];
+        if ($request->filled('roles_id')) {
+            $role = Role::find($request->roles_id);
+            if ($role) $parts[] = 'Rôle : ' . $role->lib_role;
+        }
+        if ($request->filled('grades_id')) {
+            $grade = Grade::find($request->grades_id);
+            if ($grade) $parts[] = 'Grade : ' . $grade->grade;
+        }
+        if ($request->filled('active') && $request->active !== '') {
+            $parts[] = 'État : ' . ((int)$request->active ? 'Actifs' : 'Inactifs');
+        }
+        if ($request->filled('search')) {
+            $parts[] = 'Recherche : "' . $request->search . '"';
+        }
+        return empty($parts) ? 'Tous les agents' : implode(' — ', $parts);
+    }
 
     public function username(){
         return "email";

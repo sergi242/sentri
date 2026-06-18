@@ -3,28 +3,45 @@
 namespace App\Console\Commands;
 
 use App\Models\License;
+use App\Services\LicenseService;
 use Illuminate\Console\Command;
 
 class LicenseGenerate extends Command
 {
-    protected $signature = 'license:generate {--days=30} {--org=""}';
-    protected $description = 'Générer une nouvelle clé de licence (non activée)';
+    protected $signature = 'license:register {key : Clé générée sur votre PC} {--days=30} {--org=DMCE}';
+    protected $description = 'Enregistrer en DB une clé générée avec dmce_keygen.php';
 
-    public function handle()
+    public function handle(): int
     {
-        $days = $this->option('days');
-        $org = $this->option('org') ?: 'ONDELE SYSTEMS';
+        $key  = strtoupper(trim($this->argument('key')));
+        $days = (int) $this->option('days');
+        $org  = $this->option('org');
 
-        $license = License::generateKey($days, $org);
+        $this->info("\n🔍 Vérification algorithmique...\n");
 
-        $this->info("\n✅ LICENCE GÉNÉRÉE\n");
-        $this->line("┌─ Clé de licence");
-        $this->line("│  {$license->license_key_display}");
-        $this->line("│");
-        $this->line("├─ Organisation: {$org}");
-        $this->line("├─ Validité: {$days} jours");
-        $this->line("├─ Statut: " . strtoupper($license->status));
-        $this->line("└─ À activer avec: php artisan license:activate\n");
+        // Vérifier l'algorithme
+        $algoCheck = LicenseService::verifyKeyAlgorithm($key);
+
+        if (!$algoCheck['valid']) {
+            $this->error("❌ Clé rejetée : {$algoCheck['reason']}");
+            return 1;
+        }
+
+        $this->line("✅ Signature valide pour " . date('F Y') . "\n");
+
+        // Enregistrer en DB
+        $license = License::registerKey($key, $days, $org);
+
+        $this->info("📋 Clé enregistrée !\n");
+        $this->table(['Propriété', 'Valeur'], [
+            ['Clé',          $license->license_key_display],
+            ['Organisation', $org],
+            ['Durée',        $days . ' jours'],
+            ['Statut',       strtoupper($license->status)],
+        ]);
+
+        $this->line("\nPour activer :");
+        $this->line("  php artisan license:activate {$key}\n");
 
         return 0;
     }

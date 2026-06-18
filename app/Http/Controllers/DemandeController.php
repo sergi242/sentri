@@ -6,6 +6,7 @@ use Exception;
 use ZipArchive;
 use Carbon\Carbon;
 use App\Models\Pays;
+use App\Traits\HasPerformanceOptimization;
 use App\Models\Demande;
 use App\Rules\FileType;
 use Milon\Barcode\DNS2D;
@@ -35,6 +36,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class DemandeController extends Controller
 {
+    use HasPerformanceOptimization;
+
     public function index(Request $request)
 {
     $query = Impetrant::withCount('demandes')
@@ -512,6 +515,28 @@ public function create(Request $request)
             return back();
         }
 
+        // ── Blocage demande active < 6 mois ──────────────────────────────────
+        $demandeActive = Demande::where('impetrants_id', $impetrant->id)
+            ->whereNotIn('statut_demande', ['Rejetée'])
+            ->whereNull('deleted_at')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($demandeActive) {
+            $roleActuel  = Auth::user()?->role?->lib_role;
+            $peutDeroger = in_array($roleActuel, ['SuperAdmin', 'Admin']);
+            $dateRef     = $demandeActive->date_emission ?? $demandeActive->date_demande;
+            $joursEcoules = (int) Carbon::parse($dateRef)->diffInDays(Carbon::now('Africa/Brazzaville'));
+
+            if ($joursEcoules < 183 && !$peutDeroger) {
+                toastr()->error(
+                    "Renouvellement bloqué : une demande active existe (réf. {$demandeActive->uuid}) créée il y a {$joursEcoules} jour(s). Délai minimum : 183 jours.",
+                    "Renouvellement bloqué"
+                );
+                return back()->withInput();
+            }
+        }
+
         // ── Double vérification serveur du délai 6 mois ───────────────────────
         $derniereDemande = Demande::withTrashed()
             ->where('impetrants_id', $impetrant->id)
@@ -651,7 +676,9 @@ public function create(Request $request)
             $demande->email                  = $request->email ?? "";
             $demande->categorie_socioprof_id = $request->categorie_socioprofessionnelle_id;
             $demande->created_by             = Auth::user()->id;
-            $demande->commanditaire_id       = $request->commanditaire_id;
+            $demande->commanditaire_id    = $request->commanditaire_id;
+            $demande->numero_quittance    = $request->numero_quittance;
+            $demande->date_quittance      = $request->filled('date_quittance') ? $request->date_quittance : $demande->date_demande;
             $demande->uuid                   = $request->uuid;
 
             if ($request->hasFile("photo")) {
@@ -721,7 +748,8 @@ public function create(Request $request)
             $query->whereDate('audit_logs.created_at', '<=', $request->end_date);
         }
         if ($request->filled('agent')) {
-            $query->where(DB::raw("CONCAT(users.prenom, ' ', users.nom)"), 'like', '%' . $request->agent . '%');
+            $agent = preg_replace('/[^a-zA-ZÀ-ÿ0-9\s\-\.]/u', '', $request->agent);
+            $query->where(DB::raw("CONCAT(users.prenom, ' ', users.nom)"), 'like', '%' . $agent . '%');
 
         }
 
@@ -916,7 +944,8 @@ public function create(Request $request)
             $date_actuelle         = Carbon::now();
             $date_expiration_fiche = $date_actuelle->copy()->addMonths(3);
             $demande->date_validiter_fiche = $date_expiration_fiche;
-            $demande->numero_quittance     = $request->numero_quittance;
+            $demande->numero_quittance    = $request->numero_quittance;
+            $demande->date_quittance      = $request->filled('date_quittance') ? $request->date_quittance : $request->date_demande;
             $demande->quittance_confirmee  = $request->boolean('force_quittance');
             $demande->save();
 
@@ -1006,7 +1035,11 @@ if ($request->filled('certificat_hebergement_id')) {
         $etatsCivils  = ['Célibataire','Marié(e)','Divorcé(e)','Veuf(-ve)'];
 
         $SEUIL = env('SIMILARITY_TRESHOLD', 60);
+        $imp = $demande->impetrant;
         $similaires = [];
+        if ($imp) {
+
+
 
         // Même pré-filtre SQL que similarities() pour limiter les comparaisons
         $query = Impetrant::query()
@@ -1029,7 +1062,7 @@ if ($request->filled('certificat_hebergement_id')) {
         $excludedIds = SimilarityRejection::where('demande_base_id', $id)
                         ->pluck('demande_similaire_id')->toArray();
 
-        $query->chunk(100, function ($others) use (&$similaires, $imp, $SEUIL, $demande, $excludedIds) {
+        $query->chunk(100, function ($others) use (&$similaires, $imp, $SEUIL, $excludedIds) {
             foreach ($others as $o) {
                 // Vérifier si écarté
                 $autreDemande = $o->demandes->first();
@@ -1051,6 +1084,7 @@ if ($request->filled('certificat_hebergement_id')) {
                 }
             }
         });
+        }
 
         $sims            = collect($similaires)->sortByDesc('score')->values();
         $hasSimilarities = $sims->isNotEmpty();
@@ -1123,6 +1157,28 @@ if ($request->filled('certificat_hebergement_id')) {
             $impretrant->unique_string   = TechnoDev::impetrantUniqueString($impretrant);
 
             $imp = Impetrant::where("unique_string", $impretrant->unique_string)->first();
+
+            // ── Vérification Watchlist (REPRISE) ─────────────────────────
+            $SEUIL_WL = (int) env('SIMILARITY_THRESHOLD', 60);
+            $watchlists = \App\Models\Watchlist::where('actif', true)->get();
+            foreach ($watchlists as $watch) {
+                $wlResult = \App\TechnoDev\src\Classes\IdentitySimilarityService::compareWithWatchlist($watch, [
+                    'nom'             => $impretrant->nom,
+                    'prenom'          => $impretrant->prenom,
+                    'date_naissance'  => $impretrant->date_naissance,
+                    'nationalites_id' => $impretrant->nationalites_id,
+                    'numero_passeport'=> $request->numero_passeport ?? '',
+                    'telephone'       => $request->telephone ?? '',
+                    'nom_pere'        => $impretrant->nom_pere ?? '',
+                    'nom_mere'        => $impretrant->nom_mere ?? '',
+                ]);
+                if ($wlResult['score'] >= $SEUIL_WL) {
+                    $suspectDetected  = true;
+                    $matchingDetails  = [$wlResult['level'] . ' (' . $wlResult['score'] . '%) — ' . $wlResult['decision']];
+                    break;
+                }
+            }
+            // ─────────────────────────────────────────────────────────────
             if ($imp == null) { $impretrant->save(); }
 
             $etatCivil    = $request->etat_civil;
@@ -1151,7 +1207,9 @@ if ($request->filled('certificat_hebergement_id')) {
             $demande->tag_demande            = $request->tag_demande;
             $demande->nom_conjoint           = $request->nom_conjoint;
             $demande->categorie_socioprof_id = $request->categorie_socioprofessionnelle_id;
-            $demande->commanditaire_id       = $request->commanditaire_id;
+            $demande->commanditaire_id    = $request->commanditaire_id;
+            $demande->numero_quittance    = $request->numero_quittance;
+            $demande->date_quittance      = $request->filled('date_quittance') ? $request->date_quittance : $demande->date_demande;
 
 
             if ($request->photo != null) {

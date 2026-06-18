@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Demande;
 use App\Observers\DemandeObserver;
 use Illuminate\Support\ServiceProvider;
+use App\Foundation\SystemBootstrap;
 use Illuminate\Support\Facades\Blade;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        SystemBootstrap::boot();
         // Observer pour les demandes
         Demande::observe(DemandeObserver::class);
 

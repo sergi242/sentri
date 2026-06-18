@@ -857,6 +857,18 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             if (typeof toastr !== 'undefined')
                 toastr.warning("Veuillez confirmer la quittance avant l'enregistrement.");
+            return;
+        }
+        // ── Anti-double-submit ─────────────────────────────────────────
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            if (btn.dataset.submitted === '1') {
+                e.preventDefault();
+                return;
+            }
+            btn.dataset.submitted = '1';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="la la-spinner la-spin"></i> Enregistrement...';
         }
     });
 });

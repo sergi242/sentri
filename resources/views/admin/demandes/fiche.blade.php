@@ -312,7 +312,7 @@ $unchecked = public_path('img/unchecked.png');
                         </tr>
                         <tr  style=" margin 0;">
                             <td>
-                                <table>
+                                <table style="margin-top: 10px;">
                                     <tbody>
                                         <tr>
                                             <td>
@@ -341,17 +341,7 @@ $unchecked = public_path('img/unchecked.png');
                                                 &nbsp;
                                             </td>
                                         </tr>
-                                        <tr>
-                                            <td>
-                                                &nbsp;
-                                            </td>
-                                            <td>
-                                                &nbsp;
-                                            </td>
-                                            <td>
-                                                &nbsp;
-                                            </td>
-                                        </tr>
+                                        
                                         <tr>
                                             <td style="width: 90px">
                                                 &nbsp;
@@ -378,21 +368,21 @@ $cachetNom = public_path('img/crt/cachet_nominatif.png');
 @endphp
 
 {{-- Cachet du directeur --}}
-<div style="position: absolute; top: 103%; left: 70%;">
+<div style="position: absolute; top: 100%; left: 57%;">
     @if(file_exists($cachetRond))
         <img src="{{ $cachetRond }}" style="width:150px;">
     @endif
 </div>
 
 {{-- Signature --}}
-<div style="position: absolute; top: 110%; left: 60%;">
+<div style="position: absolute; top: 106%; left: 70%;">
     @if(file_exists($signature))
         <img src="{{ $signature }}" style="width:150px;">
     @endif
 </div>
 
 {{-- Cachet date --}}
-<div style="position: absolute; top: 116%; left: 50%;">
+<div style="position: absolute; top: 113%; left: 70%;">
     @if(file_exists($cachetNom))
         <img src="{{ $cachetNom }}" style="width:150px;">
     @endif

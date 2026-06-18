@@ -1,0 +1,16 @@
+parameters:
+    paths:
+        - app
+    excludePaths:
+        - _archives
+    level: 3
+    ignoreErrors:
+        - '#Access to an undefined property Illuminate\\Http\\Request::#'
+        - '#Call to an undefined (static )?method (Illuminate|App)\\.*::#'
+        - '#Access to an undefined property (Illuminate|App)\\.*::#'
+        - '#on an unknown class (DB|Log|Config|Auth|Storage|Cache|Queue)\.#'
+        - '#Cannot call method getName\(\) on object\|string#'
+        - '#Cannot call method parameter\(\) on object\|string#'
+        - '#Cannot access property \$[a-z_]+ on array<Illuminate\\Database\\Eloquent\\Builder>#'
+        - '#Cannot call method (demandes|casierNotes|infractions)\(\) on array#'
+        - '#on an unknown class Str\.#'

@@ -6,54 +6,97 @@ use App\Models\License;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Process;
 
 class LicenseService
 {
     const CACHE_KEY = 'dmce_license_validation';
     const CACHE_TTL = 3600; // 1 heure
 
-    /**
-     * Obtenir Device ID unique (Hash de la machine)
-     * Basé sur : hostname + MAC address
-     */
-    public static function getDeviceId()
+    // ============================================================
+    // 🔐 CONFIGURATION SECRÈTE — NE JAMAIS MODIFIER
+    // ============================================================
+    const MASTER_PHRASE = 'Anaïs est ma première fille';
+
+    const MONTHLY_SALTS = [
+        1  => 'AP1401',  // Janvier   — Anne-Pascale  14/01
+        2  => 'EL0602',  // Février   — Ella          06/02
+        3  => 'AN1703',  // Mars      — Anaïs         17/03
+        4  => 'RO2304',  // Avril     — Rolcia        23/04
+        5  => 'GI0205',  // Mai       — Ginette       02/05
+        6  => 'CH2306',  // Juin      — Christie      23/06
+        7  => 'CM3107',  // Juillet   — Chimène       31/07
+        8  => 'DO2808',  // Août      — Doublé        28/08
+        9  => 'EU0709',  // Septembre — Eunice        07/09
+        10 => 'RU3010',  // Octobre   — Ruth          30/10
+        11 => 'ET2511',  // Novembre  — Étienne       25/11
+        12 => 'SE1312',  // Décembre  — Séraphin      13/12
+    ];
+
+    // ============================================================
+    // ALGORITHME DE VÉRIFICATION
+    // ============================================================
+
+    private static function getMonthSecret(int $month): string
     {
-        $hostname = php_uname('n') ?? 'unknown';
-        $macAddresses = self::getMacAddress();
-        
-        $deviceString = $hostname . '|' . $macAddresses;
-        $deviceId = hash('sha256', $deviceString);
-        
-        return $deviceId;
+        $salt = self::MONTHLY_SALTS[$month];
+        $year = date('Y');
+        return hash('sha256', self::MASTER_PHRASE . $salt . str_pad($month, 2, '0', STR_PAD_LEFT) . $year);
     }
 
     /**
-     * Récupérer l'adresse MAC (Windows/Linux/Mac)
+     * Vérifie qu'une clé est valide pour le mois EN COURS
+     * et extrait les métadonnées encodées (durée, org, expiration)
      */
-    private static function getMacAddress()
+    public static function verifyKeyAlgorithm(string $keyDisplay): array
     {
-        try {
-            if (PHP_OS_FAMILY === 'Windows') {
-                $output = shell_exec('getmac') ?? '';
-                preg_match('/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/', $output, $matches);
-                return $matches[0] ?? 'UNKNOWN';
-            } else {
-                // Linux/Mac
-                $output = shell_exec("ip link show | grep ether | awk '{print $2}' | head -1") ?? '';
-                return trim($output) ?: 'UNKNOWN';
-            }
-        } catch (\Exception $e) {
-            return 'UNKNOWN';
+        $parts = explode('-', $keyDisplay);
+
+        // Format : DMCE-YYYY-XXXXX-XXXXX-XXXXX-XXXXX-CCCC
+        if (count($parts) !== 7 || $parts[0] !== 'DMCE') {
+            return [
+                'valid'  => false,
+                'reason' => 'Format de clé invalide',
+            ];
         }
+
+        $part1    = $parts[2];
+        $part2    = $parts[3];
+        $part3    = $parts[4];
+        $part4    = $parts[5];
+        $checksum = $parts[6];
+
+        // Tester tous les mois possibles (clé valide quel que soit le mois courant)
+        // Seule l'expiration en DB contrôle la durée de vie
+        $currentYear = (int) date('Y');
+        for ($month = 1; $month <= 12; $month++) {
+            $secret = self::getMonthSecret($month);
+            $expectedChecksum = strtoupper(substr(
+                hash_hmac('sha256', $part1 . $part2 . $part3 . $part4, $secret),
+                0, 4
+            ));
+            if ($checksum === $expectedChecksum) {
+                return [
+                    'valid'  => true,
+                    'reason' => 'Signature valide',
+                    'month'  => $month,
+                    'year'   => $currentYear,
+                ];
+            }
+        }
+
+        return [
+            'valid'  => false,
+            'reason' => 'Clé invalide — signature incorrecte',
+        ];
     }
 
-    /**
-     * Valider la licence actuelle
-     */
-    public static function validate($forceRefresh = false)
+    // ============================================================
+    // VALIDATION COMPLÈTE (algorithme + DB + expiration)
+    // ============================================================
+
+    public static function validate($forceRefresh = false): array
     {
-        // Cache (1h)
+        // Cache (1h) sauf si forceRefresh
         if (!$forceRefresh) {
             $cached = Cache::get(self::CACHE_KEY);
             if ($cached) {
@@ -62,61 +105,174 @@ class LicenseService
         }
 
         $key = config('dmce.license_key');
+
         if (!$key) {
-            return [
-                'valid' => false,
-                'reason' => 'Aucune clé de licence trouvée',
+            $result = [
+                'valid'   => false,
+                'reason'  => 'Aucune clé de licence trouvée',
                 'offline' => false,
             ];
+            Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
+            return $result;
         }
 
-        $deviceId = self::getDeviceId();
-        $result = License::validateKey($key, $deviceId);
+        // 1. Vérification algorithmique mensuelle
+        $algoCheck = self::verifyKeyAlgorithm($key);
+        if (!$algoCheck['valid']) {
+            $result = [
+                'valid'   => false,
+                'reason'  => $algoCheck['reason'],
+                'offline' => false,
+            ];
+            Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
+            return $result;
+        }
 
-        // Cacher
+        // 2. Vérification en base de données
+        $license = License::where('license_key_display', $key)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$license) {
+            $result = [
+                'valid'   => false,
+                'reason'  => 'Licence non trouvée en base de données',
+                'offline' => false,
+            ];
+            Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
+            return $result;
+        }
+
+        // 3. Vérification statut
+        if (!in_array($license->status, ['active'])) {
+            $result = [
+                'valid'   => false,
+                'reason'  => 'Licence ' . $license->status,
+                'offline' => false,
+            ];
+            Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
+            return $result;
+        }
+
+        // 4. Vérification expiration
+        if ($license->expires_at && now()->gt($license->expires_at)) {
+            // Mettre à jour le statut en DB
+            $license->status = 'expired';
+            $license->save();
+
+            $result = [
+                'valid'   => false,
+                'reason'  => 'Licence expirée depuis le ' . $license->expires_at->format('d/m/Y'),
+                'offline' => false,
+            ];
+            Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
+            return $result;
+        }
+
+        // 5. Vérification device (optionnelle — si device_id enregistré)
+        if ($license->device_id) {
+            $currentDevice = self::getDeviceId();
+            if ($license->device_id !== $currentDevice) {
+                $result = [
+                    'valid'   => false,
+                    'reason'  => 'Licence liée à un autre appareil',
+                    'offline' => false,
+                ];
+                Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
+                return $result;
+            }
+        }
+
+        // ✅ Tout est valide
+        $daysRemaining = (int) now()->diffInDays($license->expires_at, false);
+
+        $result = [
+            'valid'          => true,
+            'reason'         => 'Licence valide',
+            'license'        => $license,
+            'days_remaining' => $daysRemaining,
+            'offline'        => false,
+        ];
+
         Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
-
         return $result;
     }
 
-    /**
-     * Activer une licence (command artisan)
-     */
-    public static function activateLicense($keyDisplay)
+    // ============================================================
+    // ACTIVATION (commande artisan)
+    // ============================================================
+
+    public static function activateLicense(string $keyDisplay): array
     {
+        // 1. Vérification algorithmique
+        $algoCheck = self::verifyKeyAlgorithm($keyDisplay);
+        if (!$algoCheck['valid']) {
+            return [
+                'success' => false,
+                'message' => $algoCheck['reason'],
+            ];
+        }
+
         $license = License::where('license_key_display', $keyDisplay)->first();
 
         if (!$license) {
             return [
                 'success' => false,
-                'message' => 'Clé de licence introuvable',
+                'message' => 'Clé introuvable en base de données',
             ];
         }
 
-        $deviceId = self::getDeviceId();
-        $deviceName = php_uname('n');
-        $deviceIp = $_SERVER['SERVER_ADDR'] ?? 'localhost';
+        if ($license->status === 'active') {
+            return [
+                'success' => false,
+                'message' => 'Cette clé est déjà activée',
+            ];
+        }
 
-        // Activer
+        $deviceId   = self::getDeviceId();
+        $deviceName = php_uname('n');
+        $deviceIp   = $_SERVER['SERVER_ADDR'] ?? 'localhost';
+
         $result = $license->activate($deviceId, $deviceName, $deviceIp);
 
         if ($result['success']) {
-            // Stocker dans .env
             self::saveLicenseToEnv($keyDisplay);
-            
-            // Vider le cache
             Cache::forget(self::CACHE_KEY);
         }
 
         return $result;
     }
 
-    /**
-     * Sauvegarder la clé dans .env
-     */
-    private static function saveLicenseToEnv($licenseKey)
+    // ============================================================
+    // UTILITAIRES
+    // ============================================================
+
+    public static function getDeviceId(): string
     {
-        $envFile = base_path('.env');
+        $hostname     = php_uname('n') ?? 'unknown';
+        $macAddresses = self::getMacAddress();
+        return hash('sha256', $hostname . '|' . $macAddresses);
+    }
+
+    private static function getMacAddress(): string
+    {
+        try {
+            if (PHP_OS_FAMILY === 'Windows') {
+                $output = shell_exec('getmac') ?? '';
+                preg_match('/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/', $output, $matches);
+                return $matches[0] ?? 'UNKNOWN';
+            } else {
+                $output = shell_exec("ip link show | grep ether | awk '{print $2}' | head -1") ?? '';
+                return trim($output) ?: 'UNKNOWN';
+            }
+        } catch (\Exception $e) {
+            return 'UNKNOWN';
+        }
+    }
+
+    public static function saveKeyToEnv(string $licenseKey): void
+    {
+        $envFile    = base_path('.env');
         $envContent = File::get($envFile);
 
         if (Str::contains($envContent, 'DMCE_LICENSE_KEY=')) {
@@ -130,15 +286,20 @@ class LicenseService
         }
 
         File::put($envFile, $envContent);
-        
-        // Recharger la config
         \Config::set('dmce.license_key', $licenseKey);
     }
 
-    /**
-     * Obtenir les infos de la licence
-     */
-    public static function getInfo()
+    public static function isMysqlRunning(): bool
+    {
+        try {
+            \DB::connection()->getPdo();
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public static function getInfo(): array
     {
         $validation = self::validate();
 
@@ -150,57 +311,5 @@ class LicenseService
         }
 
         return $validation['license']->getInfo();
-    }
-
-    /**
-     * Démarrer MySQL (commande manuelle)
-     * À exécuter avant de lancer l'app
-     */
-    public static function startMysql()
-    {
-        try {
-            if (PHP_OS_FAMILY === 'Windows') {
-                exec('net start MySQL80'); // Adapter le nom du service
-                return ['success' => true, 'message' => 'MySQL démarré'];
-            } else {
-                // Linux/Mac
-                exec('sudo systemctl start mysql');
-                sleep(2); // Attendre le démarrage
-                return ['success' => true, 'message' => 'MySQL démarré'];
-            }
-        } catch (\Exception $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Arrêter MySQL
-     */
-    public static function stopMysql()
-    {
-        try {
-            if (PHP_OS_FAMILY === 'Windows') {
-                exec('net stop MySQL80');
-                return ['success' => true, 'message' => 'MySQL arrêté'];
-            } else {
-                exec('sudo systemctl stop mysql');
-                return ['success' => true, 'message' => 'MySQL arrêté'];
-            }
-        } catch (\Exception $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Vérifier si MySQL est en ligne
-     */
-    public static function isMysqlRunning()
-    {
-        try {
-            \DB::connection()->getPdo();
-            return true;
-        } catch (\Exception $e) {
-            return false;
-        }
     }
 }

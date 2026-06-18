@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\HasPerformanceOptimization;
 use App\Models\Impetrant;
+use App\TechnoDev\src\Classes\IdentitySimilarityService;
 use App\Models\ImpetrantDocument;
 use App\Models\Pays;
 use App\Models\Departement;
@@ -16,6 +18,8 @@ use Illuminate\Support\Facades\Auth;
 
 class ImpetrantController extends Controller
 {
+    use HasPerformanceOptimization;
+
     // =========================================================================
     // MÉTHODES EXISTANTES — inchangées
     // =========================================================================
@@ -438,14 +442,33 @@ class ImpetrantController extends Controller
             . $request->date_naissance
             . $request->nationalites_id;
 
+        // 1. Check exact rapide (O1)
         $existant = Impetrant::where('unique_string', $uniqueString)->first();
         if ($existant) {
             return back()->withInput()
                 ->with('doublon_id', $existant->id)
                 ->with('doublon_nom', $existant->nom . ' ' . $existant->prenom)
-                ->withErrors(['doublon' =>
-                    "Cet impétrant existe déjà dans le système (#{$existant->id})."
-                ]);
+                ->withErrors(['doublon' => "Cet impétrant existe déjà dans le système (#{$existant->id})."]);
+        }
+
+        // 2. Check fuzzy (variantes orthographiques)
+        $profilA = new Impetrant([
+            'nom' => $request->nom, 'prenom' => $request->prenom,
+            'sexe' => $request->sexe, 'date_naissance' => $request->date_naissance,
+            'nationalites_id' => $request->nationalites_id, 'lieu_naissance' => '',
+        ]);
+        $candidats = Impetrant::where('nationalites_id', $request->nationalites_id)
+            ->orWhereRaw('LOWER(SUBSTRING(nom,1,3)) = ?', [strtolower(substr($request->nom,0,3))])
+            ->limit(300)->get();
+        foreach ($candidats as $candidat) {
+            $result = \App\TechnoDev\src\Classes\IdentitySimilarityService::compare($profilA, $candidat);
+            if ($result['score'] >= 75) {
+                return back()->withInput()
+                    ->with('doublon_id', $candidat->id)
+                    ->with('doublon_nom', $candidat->nom . ' ' . $candidat->prenom)
+                    ->with('doublon_score', $result['score'])
+                    ->withErrors(['doublon' => "Doublon probable ({$result['score']}%) : {$candidat->nom} {$candidat->prenom} (#{$candidat->id})."]);
+            }
         }
 
         DB::beginTransaction();
@@ -735,12 +758,25 @@ class ImpetrantController extends Controller
         }
 
         $uniqueString = $nom . $prenom . $sexe . $dn . $nat;
-        $existant     = Impetrant::where('unique_string', $uniqueString)->first();
 
-        return response()->json([
-            'doublon' => $existant !== null,
-            'id'      => $existant?->id,
-            'nom'     => $existant ? ($existant->nom . ' ' . $existant->prenom) : null,
-        ]);
+        // Check exact
+        $existant = Impetrant::where('unique_string', $uniqueString)->first();
+        if ($existant) {
+            return response()->json(['doublon' => true, 'id' => $existant->id,
+                'nom' => $existant->nom . ' ' . $existant->prenom, 'score' => 100]); }
+
+        // Check fuzzy
+        $profilA = new Impetrant(['nom'=>$nom,'prenom'=>$prenom,'sexe'=>$sexe,
+            'date_naissance'=>$dn,'nationalites_id'=>$nat,'lieu_naissance'=>'']);
+        $candidats = Impetrant::where('nationalites_id', $nat)
+            ->orWhereRaw('LOWER(SUBSTRING(nom,1,3)) = ?', [strtolower(substr($nom,0,3))])
+            ->limit(300)->get();
+        foreach ($candidats as $c) {
+            $r = IdentitySimilarityService::compare($profilA, $c);
+            if ($r['score'] >= 75) {
+                return response()->json(['doublon' => true, 'id' => $c->id,
+                    'nom' => $c->nom . ' ' . $c->prenom, 'score' => $r['score']]); } }
+
+        return response()->json(['doublon' => false]);
     }
 }

@@ -23,7 +23,7 @@ class Demande extends Model
      */
     public function impetrant(): BelongsTo
     {
-        return $this->belongsTo(Impetrant::class, 'impetrants_id', 'id');
+        return $this->belongsTo(Impetrant::class, 'impetrants_id', 'id')->withTrashed();
     }
 
     /**

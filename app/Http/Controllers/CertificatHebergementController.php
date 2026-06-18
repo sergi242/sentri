@@ -166,6 +166,16 @@ class CertificatHebergementController extends Controller
                             . $request->heb_etr_nationalites_id;
 
                         $impetrantExistant = Impetrant::where('unique_string', $uniqueString)->first();
+                        if (!$impetrantExistant) {
+                            $profilA = new Impetrant(['nom'=>$request->heb_etr_nom,'prenom'=>$request->heb_etr_prenom,
+                                'sexe'=>$request->heb_etr_sexe,'date_naissance'=>$request->heb_etr_date_naissance,
+                                'nationalites_id'=>$request->heb_etr_nationalites_id,'lieu_naissance'=>'']);
+                            $candidats = Impetrant::where('nationalites_id',$request->heb_etr_nationalites_id)->limit(300)->get();
+                            foreach($candidats as $c) {
+                                $r = \App\TechnoDev\src\Classes\IdentitySimilarityService::compare($profilA,$c);
+                                if($r['score']>=75){$impetrantExistant=$c;break;}
+                            }
+                        }
 
                         if ($impetrantExistant) {
                             $hebergeurId = $impetrantExistant->id;
@@ -249,7 +259,7 @@ class CertificatHebergementController extends Controller
                     'heberge_nationalites_id' => 'required|exists:pays,id',
                 ]);
 
-                // Vérifier doublons via unique_string
+                // Vérifier doublons via unique_string puis fuzzy
                 $uniqueString = strtoupper($request->heberge_nom)
                     . strtoupper($request->heberge_prenom)
                     . strtoupper($request->heberge_sexe)
@@ -257,6 +267,16 @@ class CertificatHebergementController extends Controller
                     . $request->heberge_nationalites_id;
 
                 $impetrantExistant = Impetrant::where('unique_string', $uniqueString)->first();
+                if (!$impetrantExistant) {
+                    $profilA = new Impetrant(['nom'=>$request->heberge_nom,'prenom'=>$request->heberge_prenom,
+                        'sexe'=>$request->heberge_sexe,'date_naissance'=>$request->heberge_date_naissance,
+                        'nationalites_id'=>$request->heberge_nationalites_id,'lieu_naissance'=>'']);
+                    $candidats = Impetrant::where('nationalites_id',$request->heberge_nationalites_id)->limit(300)->get();
+                    foreach($candidats as $c) {
+                        $r = \App\TechnoDev\src\Classes\IdentitySimilarityService::compare($profilA,$c);
+                        if($r['score']>=75){$impetrantExistant=$c;break;}
+                    }
+                }
 
                 if ($impetrantExistant) {
                     $hebergeImpetrantId = $impetrantExistant->id;

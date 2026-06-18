@@ -85,7 +85,7 @@
                                 <a href="{{ route('demandes.show', $demande->id) }}" class="photo-link" title="Voir le détail">
                                     <div class="photo-wrapper">
                                      @php
-                                            $photoName = trim($demande->photo ?? '');
+                                            $photoName = trim($demande->impetrant->photo ?? '');
                                             $color = '#' . substr(md5($demande->impetrant->nom ?? 'D'), 0, 6);
                                         @endphp
 

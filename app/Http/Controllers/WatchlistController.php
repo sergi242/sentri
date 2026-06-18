@@ -83,21 +83,23 @@ public function create()
         $dob = $request->date_naissance;
         $nat = $request->pays_naissance;
 
-        $query = \App\Models\Watchlist::where(function($q) use ($nom, $prenom, $doc, $dob, $nat) {
-            if ($doc) {
-                $q->where('numero_document', $doc);
+        // Anti-doublon : document exact OU fuzzy sur les entrées actives
+        if ($doc && \App\Models\Watchlist::where('numero_document', $doc)->exists()) {
+            return redirect()->back()->withInput()->with('error', 'ALERTE : Un profil avec ce document existe déjà.');
+        }
+        $existingEntries = \App\Models\Watchlist::where('actif', true)->get();
+        foreach ($existingEntries as $entry) {
+            $r = \App\TechnoDev\src\Classes\IdentitySimilarityService::compareWithWatchlist($entry, [
+                'nom' => $nom, 'prenom' => $prenom, 'date_naissance' => $dob,
+                'nationalites_id' => $nat, 'numero_passeport' => $doc ?? '',
+                'telephone' => '', 'nom_pere' => '', 'nom_mere' => '',
+            ]);
+            if ($r['score'] >= 75) {
+                return redirect()->back()->withInput()
+                    ->with('error', "ALERTE : Un profil similaire existe déjà ({\['score']}%) — {\->nom} {\->prenom}.");
             }
-            if ($nom && $prenom && $dob && $nat) {
-                $q->orWhere(function($sq) use ($nom, $prenom, $dob, $nat) {
-                    $sq->where('nom', $nom)
-                       ->where('prenom', $prenom)
-                       ->where('date_naissance', $dob)
-                       ->where('nationalite', $nat);
-                });
-            }
-        });
-
-        if ($query->exists()) {
+        }
+        if (false) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'ALERTE : Un profil identique existe déjà.');
