@@ -23,7 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        SystemBootstrap::boot();
+        // Bypass sur Windows (dev local) — fichier /etc/dmce/.sys_env n'existe pas
+        if (PHP_OS_FAMILY !== 'Windows') {
+            SystemBootstrap::boot();
+        }
         // Observer pour les demandes
         Demande::observe(DemandeObserver::class);
 

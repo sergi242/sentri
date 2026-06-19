@@ -28,12 +28,25 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\StatistiquesController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\CertificatHebergementController;
+use App\Http\Controllers\Api\FrontendTestController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// ============================================================
+// ROUTES TEST COMMUNICATION FRONTEND → BACKEND (100.96.42.74:82)
+// ============================================================
+Route::prefix('api-test')->group(function () {
+    Route::get('ping',          [FrontendTestController::class, 'ping']);
+    Route::post('login',        [FrontendTestController::class, 'login']);
+    Route::get('me',            [FrontendTestController::class, 'me']);
+    Route::get('demandes',      [FrontendTestController::class, 'demandes']);
+    Route::get('impetrants',    [FrontendTestController::class, 'impetrants']);
+    Route::get('statistiques',  [FrontendTestController::class, 'statistiques']);
+});
 
 // --- ROUTES PUBLIQUES ---
 Route::get('stats-migratoire', [DemandeController::class, 'testprint'])

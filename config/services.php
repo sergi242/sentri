@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'dmce_api' => [
+        'base_url' => env('API_BASE_URL', 'http://100.96.42.74:82'),
+        'token'    => env('API_TOKEN'),
+    ],
+
 ];

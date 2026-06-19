@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('numero_document', 50);
             $table->date('date_delivrance')->nullable();
             $table->date('date_expiration')->nullable();
-            $table->unsignedBigInteger('pays_delivrance_id')->nullable();
+            $table->unsignedInteger('pays_delivrance_id')->nullable();
             $table->text('mrz')->nullable();
             $table->enum('source', ['lecteur', 'manuel'])->default('manuel');
             $table->unsignedBigInteger('created_by')->nullable();

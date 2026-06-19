@@ -28,16 +28,8 @@ return new class extends Migration
             // Statut
             $table->enum('status', ['active', 'expired', 'revoked', 'pending', 'used_once'])->default('pending');
             
-            // Features JSON
-            $table->json('features')->default(json_encode([
-                'users' => true,
-                'demandes' => true,
-                'watchlist' => true,
-                'reports' => true,
-                'api' => true,
-                'impetrants' => true,
-                'flux_migratoires' => true,
-            ]));
+            // Features JSON — pas de default (MySQL strict interdit default sur JSON)
+            $table->json('features')->nullable();
             
             // Limites
             $table->integer('max_users')->default(999);
@@ -57,7 +49,6 @@ return new class extends Migration
             
             // Index
             $table->index(['status', 'expires_at']);
-            $table->index('device_id');
         });
 
         // Créer la table de logs de validation

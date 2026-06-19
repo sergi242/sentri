@@ -24,5 +24,16 @@ class UserSeeder extends Seeder
                 "grades_id"=>6
             ]);
         }
+
+        if(User::whereEmail("brazza01@dmce.local")->first() == null){
+            User::create([
+                "prenom"=>"Admin",
+                "nom"=>"Brazza",
+                "email"=>"brazza01@dmce.local",
+                "roles_id"=>1,
+                "password"=>Hash::make("123"),
+                "grades_id"=>6
+            ]);
+        }
     }
 }
