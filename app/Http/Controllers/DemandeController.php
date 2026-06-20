@@ -1223,7 +1223,7 @@ if ($request->filled('certificat_hebergement_id')) {
             }
 
             $passeport = DocumentDemande::where("type_document","Passeport")->where("demandes_id",$id)->first();
-            if ($passeport != null) {
+            if ($passeport != null && $request->filled('numero_passeport')) {
                 $passeport->numero_document = $request->numero_passeport;
                 $passeport->date_emission   = $request->date_emission_passeport;
                 $passeport->date_expiration = $request->date_expiration_passeport;
