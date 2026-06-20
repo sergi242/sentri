@@ -1,137 +1,202 @@
 <!DOCTYPE html>
-<html class="loading" lang="en" data-textdirection="ltr">
-<!-- BEGIN: Head-->
-
+<html lang="fr">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
-    <meta name="description" content="">
-    <meta name="keywords" content="">
-    <meta name="author" content="PIXINVENT">
-    <title>Se Connecter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Se Connecter — DMCE</title>
     <link rel="apple-touch-icon" href="{{asset('logo.png')}}">
     <link rel="shortcut icon" type="image/png" href="{{asset('logo.png')}}">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i%7CQuicksand:300,400,500,700" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    <!-- BEGIN: Vendor CSS-->
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/vendors.min.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/forms/icheck/icheck.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/vendors/css/forms/icheck/custom.css')}}">
-    <!-- END: Vendor CSS-->
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
 
-    <!-- BEGIN: Theme CSS-->
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/bootstrap.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/bootstrap-extended.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/colors.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/components.css')}}">
-    <!-- END: Theme CSS-->
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: url('{{ asset("img/login-bg.jpg") }}') center center / cover no-repeat;
+            filter: brightness(0.55) saturate(1.1);
+            z-index: -2;
+        }
 
-    <!-- BEGIN: Page CSS-->
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/core/menu/menu-types/vertical-menu-modern.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/core/colors/palette-gradient.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{asset('res/app-assets/css/pages/login-register.css')}}">
-    <!-- END: Page CSS-->
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(160deg, rgba(10,14,26,0.85) 0%, rgba(15,23,42,0.6) 50%, rgba(10,14,26,0.9) 100%);
+            z-index: -1;
+        }
 
-    <!-- BEGIN: Custom CSS-->
-    <link rel="stylesheet" type="text/css" href="{{asset('res/assets/css/style.css')}}">
-    <!-- END: Custom CSS-->
-    {{-- @toastr_css --}}
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 28px;
+            color: #fff;
+        }
+
+        .brand .badge-title {
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: #93c5fd;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .brand h1 {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.4;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+        }
+
+        .brand .subtitle {
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-top: 6px;
+            letter-spacing: 1px;
+        }
+
+        .card {
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px;
+            padding: 36px 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .card-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .form-group .icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 13px 16px 13px 42px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #f1f5f9;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-control::placeholder { color: #64748b; }
+
+        .form-control:focus {
+            border-color: #3b82f6;
+            background: rgba(255,255,255,0.09);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+
+        .form-control.is-invalid {
+            border-color: #ef4444;
+        }
+
+        .invalid-feedback {
+            color: #fca5a5;
+            font-size: 12px;
+            margin-top: 6px;
+            display: block;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-login:hover { opacity: 0.92; }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 11px;
+            color: #64748b;
+            letter-spacing: 1px;
+        }
+    </style>
 </head>
-<!-- END: Head-->
-
-<!-- BEGIN: Body-->
-
-<body class="vertical-layout vertical-menu-modern 1-column  bg-full-screen-image blank-page" data-open="click" data-menu="vertical-menu-modern" data-col="1-column">
-    <!-- BEGIN: Content-->
-    <div class="app-content content">
-        <div class="content-overlay"></div>
-        <div class="content-wrapper">
-            <div class="content-header row">
-            </div>
-            <div class="content-body">
-                <section class="row flexbox-container">
-                    <div class="col-12 d-flex align-items-center justify-content-center">
-                        <div class="col-lg-4 col-md-8 col-10 box-shadow-2 p-0">
-                            <div class="card border-grey border-lighten-3 px-1 py-1 m-0">
-                                <div class="card-header border-0">
-                                    <div class="card-title">
-                                        <h2><strong>CID <br> DEPARTEMENT DES MIGRATIONS ET DU CONTROLE DES ETRANGERS</strong></h2>
-                                    </div>
-                                </div>
-                                <div class="card-content">
-                                    <div class="card-body">
-                                        <form class="form-horizontal" method="POST" action="{{route('users.authenticate')}}" novalidate>
-                                            @csrf
-                                            <fieldset class="form-group position-relative has-icon-left">
-                                                <input type="email" class="form-control @error('email') is-invalid @enderror " name="email" value="{{old('email')}}" placeholder="Votre Email" required>
-                                                <div class="form-control-position">
-                                                    <i class="la la-user"></i>
-                                                </div>
-                                                @error('email')
-                                                <div class="invalid-feedback">
-                                                            {{$message}}
-                                                  </div>
-                                                @enderror
-                                            </fieldset>
-                                            <fieldset class="form-group position-relative has-icon-left">
-                                                <input type="password" class="form-control @error('password') is-invalid @enderror" name="password" value="" placeholder="Votre mot de passe" required>
-                                                <div class="form-control-position">
-                                                    <i class="la la-key"></i>
-                                                </div>
-                                                @error('password')
-                                                <div class="invalid-feedback">
-                                                            {{$message}}
-                                                  </div>
-                                                @enderror
-                                            </fieldset>
-                                            {{-- <div class="form-group row">
-                                                <div class="col-sm-6 col-12 text-center text-sm-left pr-0">
-                                                    <fieldset>
-                                                        <input type="checkbox" name="remember" class="chk-remember">
-                                                        <label for="remember-me"> Se souvenir de moi</label>
-                                                    </fieldset>
-                                                </div>
-                                                @if (Route::has('password.request'))
-                                                        <div class="col-sm-6 col-12 float-sm-left text-center text-sm-right"><a href="{{ route('password.request') }}" class="card-link">Mot de passe oublié ?</a></div>
-                                                @endif
-
-                                            </div> --}}
-                                            <button type="submit" class="btn btn-secondary btn-block"><i class="ft-unlock"></i> Se connecter</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-            </div>
+<body>
+    <div class="login-wrapper">
+        <div class="brand">
+            <div class="badge-title">République du Congo</div>
+            <h1>CID<br>DÉPARTEMENT DES MIGRATIONS<br>ET DU CONTRÔLE DES ÉTRANGERS</h1>
+            <div class="subtitle">Unité · Travail · Progrès</div>
         </div>
+
+        <div class="card">
+            <div class="card-title">Connexion à votre espace</div>
+
+            <form method="POST" action="{{ route('users.authenticate') }}" novalidate>
+                @csrf
+
+                <div class="form-group">
+                    <span class="icon">&#9993;</span>
+                    <input type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" placeholder="Votre email" required autofocus>
+                    @error('email')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <span class="icon">&#128274;</span>
+                    <input type="password" class="form-control @error('password') is-invalid @enderror" name="password" placeholder="Votre mot de passe" required>
+                    @error('password')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <button type="submit" class="btn-login">Se connecter</button>
+            </form>
+        </div>
+
+        <div class="footer-note">SENTRI — Système sécurisé</div>
     </div>
-    <!-- END: Content-->
-
-
-    <!-- BEGIN: Vendor JS-->
-    <script src="{{asset('res/app-assets/vendors/js/vendors.min.js')}}"></script>
-    <!-- BEGIN Vendor JS-->
-
-    <!-- BEGIN: Page Vendor JS-->
-    <script src="{{asset('res/app-assets/vendors/js/forms/validation/jqBootstrapValidation.js')}}"></script>
-    <script src="{{asset('res/app-assets/vendors/js/forms/icheck/icheck.min.js')}}"></script>
-    <!-- END: Page Vendor JS-->
-
-    <!-- BEGIN: Theme JS-->
-    <script src="{{asset('res/app-assets/js/core/app-menu.js')}}"></script>
-    <script src="{{asset('res/app-assets/js/core/app.js')}}"></script>
-    <!-- END: Theme JS-->
-
-    <!-- BEGIN: Page JS-->
-    <script src="{{asset('res/app-assets/js/scripts/forms/form-login-register.js')}}"></script>
-    <!-- END: Page JS-->
-    {{-- @toastr_js
-    @toastr_render --}}
 </body>
-<!-- END: Body-->
-
 </html>
