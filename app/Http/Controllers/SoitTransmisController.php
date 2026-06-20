@@ -25,7 +25,7 @@ class SoitTransmisController extends Controller
     {
         $response    = $this->api->getSoitTransmisList();
         $raw         = $response['data'] ?? (isset($response['error']) ? [] : $response);
-        $soit_transmis = collect($raw)->map(fn($s) => (object) $s);
+        $soit_transmis = collect($raw)->map(fn($s) => json_decode(json_encode($s)));
 
         return view("admin.soittransmis.index", compact("soit_transmis"));
     }
@@ -197,7 +197,7 @@ class SoitTransmisController extends Controller
         }
 
         $stData       = $response['data'] ?? $response;
-        $soit_transmis = (object) $stData;
+        $soit_transmis = json_decode(json_encode($stData));
 
         // Load demandes locally (complex view may need Eloquent relations)
         $demandes = Demande::where("soit_transmis_id", $id)->get();
@@ -215,7 +215,7 @@ class SoitTransmisController extends Controller
         }
 
         $stData       = $response['data'] ?? $response;
-        $soit_transmis = (object) $stData;
+        $soit_transmis = json_decode(json_encode($stData));
         $users        = User::all();
 
         return view("admin.soittransmis.edit", compact("soit_transmis", "users"));
