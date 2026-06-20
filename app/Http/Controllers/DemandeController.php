@@ -682,7 +682,7 @@ public function create(Request $request)
             $demande->uuid                   = $request->uuid;
 
             if ($request->hasFile("photo")) {
-                $ph = $request->file('photo')->store('demandes');
+                $ph = $request->file('photo')->store('demandes', 'demande');
                 $demande->photo = $ph;
             } else {
                 $demande->photo = "";
@@ -921,7 +921,7 @@ public function create(Request $request)
             $demande->uuid                   = $request->uuid;
 
             if ($request->hasFile("photo")) {
-                $ph = $request->file('photo')->store('demandes');
+                $ph = $request->file('photo')->store('demandes', 'demande');
                 $demande->photo = $ph;
             } else {
                 $demande->photo = "";
@@ -1213,7 +1213,7 @@ if ($request->filled('certificat_hebergement_id')) {
 
 
             if ($request->photo != null) {
-                $ph = $request->photo->store('demandes');
+                $ph = $request->photo->store('demandes', 'demande');
                 $demande->photo = $ph;
             }
             $demande->save();
