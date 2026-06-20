@@ -173,7 +173,7 @@
         <div class="card">
             <div class="card-title">Connexion à votre espace</div>
 
-            <form method="POST" action="{{ route('users.authenticate') }}" novalidate>
+            <form method="POST" action="{{ route('login') }}" novalidate>
                 @csrf
 
                 <div class="form-group">
