@@ -97,8 +97,8 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">SENTEI</div>
-        <div class="subtitle">Système d'Enregistrement National des Titres et Étrangers Immigrés</div>
+        <div class="logo">SENTRI</div>
+        <div class="subtitle">Système d'Enregistrement National des Titres et Résidents Immigrés</div>
         <div class="divider"></div>
 
         <div class="icon">🔌</div>
@@ -113,8 +113,8 @@
         <br>
 
         <div class="contact-box">
-            <p>Contacter l'administrateur</p>
-            <strong>ONDELE SYSTEMS &mdash; Brazzaville</strong>
+            <p>Veuillez contacter</p>
+            <strong>l'administrateur système</strong>
         </div>
 
         <br>
