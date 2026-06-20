@@ -45,7 +45,7 @@ class ApiClient
             'json' => compact('email', 'password'),
         ]);
 
-        $data = json_decode($response->getBody(), true);
+        $data = $this->decode($response->getBody());
 
         if (isset($data['token'])) {
             Session::put('api_token', $data['token']);
@@ -144,13 +144,19 @@ class ApiClient
     {
         try {
             $response = $this->http->get('ping');
-            return json_decode($response->getBody(), true);
+            return $this->decode($response->getBody());
         } catch (\Throwable $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 
     // ── Helpers privés ──────────────────────────────────────────────────────
+
+    private function decode($body): array
+    {
+        $raw = preg_replace('/^\xEF\xBB\xBF/', '', (string) $body);
+        return json_decode($raw, true) ?? [];
+    }
 
     private function get(string $uri, array $query = []): array
     {
@@ -160,7 +166,7 @@ class ApiClient
                 $options['query'] = $query;
             }
             $response = $this->http->get($uri, $options);
-            return json_decode($response->getBody(), true);
+            return $this->decode($response->getBody());
         } catch (RequestException $e) {
             return $this->handleError($e);
         }
@@ -173,7 +179,7 @@ class ApiClient
                 'headers' => $this->authHeaders(),
                 'json'    => $data,
             ]);
-            return json_decode($response->getBody(), true);
+            return $this->decode($response->getBody());
         } catch (RequestException $e) {
             return $this->handleError($e);
         }
@@ -186,7 +192,7 @@ class ApiClient
                 'headers' => $this->authHeaders(),
                 'json'    => $data,
             ]);
-            return json_decode($response->getBody(), true);
+            return $this->decode($response->getBody());
         } catch (RequestException $e) {
             return $this->handleError($e);
         }
