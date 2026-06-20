@@ -45,8 +45,8 @@
                                                         <td>{{$st->numero}}</td>
                                                         {{-- <td> {{$st->demandes_count}} </td> --}}
                                                         <td>{{$st->commanditaire?->nom}}&nbsp;{{$st->commanditaire?->prenom}}</td>
-                                                        <td>{{$st->users?->nom}}&nbsp;{{$st->users?->prenom}}</td>
-                                                        <td> {{$st->demandes_count}} </td>
+                                                        <td>{{$st->user?->nom}}&nbsp;{{$st->user?->prenom}}</td>
+                                                        <td> {{$st->demandes_count ?? ($st->demandes ? count($st->demandes) : 0)}} </td>
                                                         <td>
                                                             <div class="btn-group btn-block">
                                                                 <button type="button" class="btn btn-dark btn-sm">Action</button>
