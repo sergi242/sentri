@@ -1,124 +1,76 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service indisponible — SENTEI</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #0a0e1a;
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container { text-align: center; padding: 40px 20px; }
-        .logo {
-            font-size: 80px;
-            font-weight: 900;
-            letter-spacing: 14px;
-            color: #fff;
-            text-shadow: 0 0 40px rgba(59,130,246,0.9), 0 0 80px rgba(59,130,246,0.4);
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            font-size: 11px;
-            letter-spacing: 4px;
-            color: #475569;
-            text-transform: uppercase;
-            margin-bottom: 64px;
-        }
-        .icon {
-            font-size: 56px;
-            margin-bottom: 28px;
-            display: inline-block;
-            animation: blink 1.6s ease-in-out infinite;
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.2; }
-        }
-        .title {
-            font-size: 26px;
-            font-weight: 700;
-            color: #f1f5f9;
-            margin-bottom: 14px;
-        }
-        .message {
-            font-size: 15px;
-            color: #94a3b8;
-            max-width: 460px;
-            margin: 0 auto 36px;
-            line-height: 1.8;
-        }
-        .badge {
-            display: inline-block;
-            background: #0f172a;
-            border: 1px solid #1e3a5f;
-            border-radius: 6px;
-            padding: 7px 18px;
-            font-size: 12px;
-            color: #475569;
-            letter-spacing: 2px;
-            margin-bottom: 44px;
-        }
-        .contact-box {
-            background: #0f172a;
-            border: 1px solid #1d4ed8;
-            border-radius: 14px;
-            padding: 22px 36px;
-            display: inline-block;
-            margin-bottom: 32px;
-        }
-        .contact-box p { font-size: 12px; color: #64748b; margin-bottom: 6px; }
-        .contact-box strong { color: #3b82f6; font-size: 15px; font-weight: 700; }
-        .btn {
-            display: inline-block;
-            padding: 11px 28px;
-            background: #1d4ed8;
-            color: #fff;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-        .btn:hover { background: #2563eb; }
-        .divider {
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(to right, transparent, #1d4ed8, transparent);
-            margin: 0 auto 44px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>503 — SENTRI</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;color:#fff;font-family:'Segoe UI',Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+.logo{font-size:52px;font-weight:900;letter-spacing:10px;text-shadow:0 0 30px rgba(59,130,246,0.9);margin-bottom:4px}
+.sub{font-size:10px;letter-spacing:3px;color:#475569;text-transform:uppercase;margin-bottom:6px}
+.err{font-size:13px;color:#ef4444;letter-spacing:2px;margin-bottom:16px}
+.msg{font-size:13px;color:#64748b;margin-bottom:18px}
+canvas{border:2px solid #1d4ed8;border-radius:8px;display:block}
+.info{font-size:11px;color:#334155;margin-top:10px}
+.score{font-size:14px;color:#3b82f6;margin-bottom:8px}
+a{display:inline-block;margin-top:14px;padding:8px 22px;background:#1d4ed8;color:#fff;border-radius:6px;text-decoration:none;font-size:12px}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">SENTRI</div>
-        <div class="subtitle">Système d'Enregistrement National des Titres et Résidents Immigrés</div>
-        <div class="divider"></div>
-
-        <div class="icon">🔌</div>
-
-        <div class="title">Connexion au serveur échouée</div>
-        <div class="message">
-            Le serveur central est actuellement inaccessible.<br>
-            Vos données sont sécurisées. Veuillez contacter l'administrateur système.
-        </div>
-
-        <div class="badge">ERREUR 503 &mdash; SERVEUR INDISPONIBLE</div>
-        <br>
-
-        <div class="contact-box">
-            <p>Veuillez contacter</p>
-            <strong>l'administrateur système</strong>
-        </div>
-
-        <br>
-        <a href="{{ url('/') }}" class="btn">&#8635; Réessayer</a>
-    </div>
+<div class="logo">SENTRI</div>
+<div class="sub">Système d'Enregistrement National</div>
+<div class="err">503 — SERVEUR INDISPONIBLE</div>
+<div class="msg">Connexion au serveur échouée — contacter l'administrateur</div>
+<div class="score">Score : <span id="sc">0</span></div>
+<canvas id="c" width="320" height="280"></canvas>
+<div class="info">Flèches pour jouer · ESPACE pour recommencer</div>
+<a href="{{ url('/') }}">↺ Réessayer</a>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d'),W=320,H=280,S=20;
+let snake,dir,food,score,dead,loop;
+function init(){
+  snake=[{x:8,y:7},{x:7,y:7},{x:6,y:7}];
+  dir={x:1,y:0};food=rnd();score=0;dead=false;
+  clearInterval(loop);loop=setInterval(tick,130);
+}
+function rnd(){
+  return{x:Math.floor(Math.random()*(W/S)),y:Math.floor(Math.random()*(H/S))};
+}
+function tick(){
+  if(dead)return;
+  const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+  if(h.x<0||h.x>=W/S||h.y<0||h.y>=H/S||snake.some(s=>s.x===h.x&&s.y===h.y)){
+    dead=true;draw();return;
+  }
+  snake.unshift(h);
+  if(h.x===food.x&&h.y===food.y){score++;food=rnd();document.getElementById('sc').textContent=score;}
+  else snake.pop();
+  draw();
+}
+function draw(){
+  ctx.fillStyle='#0a0e1a';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1e293b';
+  for(let x=0;x<W/S;x++)for(let y=0;y<H/S;y++)if((x+y)%2===0)ctx.fillRect(x*S,y*S,S,S);
+  ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(food.x*S+S/2,food.y*S+S/2,S/2-2,0,Math.PI*2);ctx.fill();
+  snake.forEach((s,i)=>{
+    ctx.fillStyle=i===0?'#3b82f6':'#1d4ed8';
+    ctx.beginPath();ctx.roundRect(s.x*S+1,s.y*S+1,S-2,S-2,4);ctx.fill();
+  });
+  if(dead){
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ef4444';ctx.font='bold 22px Segoe UI';ctx.textAlign='center';ctx.fillText('GAME OVER',W/2,H/2-10);
+    ctx.fillStyle='#94a3b8';ctx.font='13px Segoe UI';ctx.fillText('ESPACE pour recommencer',W/2,H/2+15);
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp'&&dir.y!==1)dir={x:0,y:-1};
+  if(e.key==='ArrowDown'&&dir.y!==-1)dir={x:0,y:1};
+  if(e.key==='ArrowLeft'&&dir.x!==1)dir={x:-1,y:0};
+  if(e.key==='ArrowRight'&&dir.x!==-1)dir={x:1,y:0};
+  if(e.key===' '){e.preventDefault();if(dead){document.getElementById('sc').textContent=0;init();}}
+});
+init();
+</script>
 </body>
 </html>
