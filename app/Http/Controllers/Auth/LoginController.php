@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
+use App\Services\ApiClient;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class LoginController extends Controller
 {
@@ -36,5 +40,19 @@ class LoginController extends Controller
     public function __construct()
     {
         $this->middleware('guest')->except('logout');
+    }
+
+    protected function authenticated(Request $request, $user)
+    {
+        try {
+            $apiClient = app(ApiClient::class);
+            $data = $apiClient->login($request->input($this->username()), $request->input('password'));
+
+            if (empty($data['token'])) {
+                Log::warning('Login API: aucun token reçu', ['email' => $request->input($this->username())]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Login API échoué: ' . $e->getMessage());
+        }
     }
 }
