@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Se Connecter — DMCE</title>
+    <title>Se Connecter DMCE</title>
     <link rel="apple-touch-icon" href="{{asset('logo.png')}}">
     <link rel="shortcut icon" type="image/png" href="{{asset('logo.png')}}">
     <style>
@@ -91,23 +91,12 @@
         }
 
         .form-group {
-            position: relative;
             margin-bottom: 18px;
-        }
-
-        .form-group .icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #64748b;
-            font-size: 16px;
-            pointer-events: none;
         }
 
         .form-control {
             width: 100%;
-            padding: 13px 16px 13px 42px;
+            padding: 13px 16px;
             background: rgba(255,255,255,0.06);
             border: 1px solid rgba(255,255,255,0.15);
             border-radius: 10px;
@@ -177,7 +166,6 @@
                 @csrf
 
                 <div class="form-group">
-                    <span class="icon">&#9993;</span>
                     <input type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" placeholder="Votre email" required autofocus>
                     @error('email')
                         <span class="invalid-feedback">{{ $message }}</span>
@@ -185,7 +173,6 @@
                 </div>
 
                 <div class="form-group">
-                    <span class="icon">&#128274;</span>
                     <input type="password" class="form-control @error('password') is-invalid @enderror" name="password" placeholder="Votre mot de passe" required>
                     @error('password')
                         <span class="invalid-feedback">{{ $message }}</span>
@@ -196,7 +183,7 @@
             </form>
         </div>
 
-        <div class="footer-note">SENTRI — Système sécurisé</div>
+        <div class="footer-note">SENTRI</div>
     </div>
 </body>
 </html>
