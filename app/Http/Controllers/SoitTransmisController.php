@@ -23,7 +23,7 @@ class SoitTransmisController extends Controller
 
     public function index()
     {
-        $response    = $this->api->getSoitTransmisList();
+        $response    = $this->api->getSoitTransmisList(['per_page' => 1000]);
         $raw         = $response['data'] ?? (isset($response['error']) ? [] : $response);
         $soit_transmis = collect($raw)->map(fn($s) => json_decode(json_encode($s)));
 
