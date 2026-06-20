@@ -413,7 +413,7 @@ class ApiClient
             }
             $response = $this->http->get($uri, $options);
             return $this->decode($response->getBody());
-        } catch (RequestException $e) {
+        } catch (\Throwable $e) {
             return $this->handleError($e);
         }
     }
@@ -426,7 +426,7 @@ class ApiClient
                 'json'    => $data,
             ]);
             return $this->decode($response->getBody());
-        } catch (RequestException $e) {
+        } catch (\Throwable $e) {
             return $this->handleError($e);
         }
     }
@@ -439,7 +439,7 @@ class ApiClient
                 'json'    => $data,
             ]);
             return $this->decode($response->getBody());
-        } catch (RequestException $e) {
+        } catch (\Throwable $e) {
             return $this->handleError($e);
         }
     }
@@ -451,16 +451,20 @@ class ApiClient
                 'headers' => $this->authHeaders(),
             ]);
             return $this->decode($response->getBody());
-        } catch (RequestException $e) {
+        } catch (\Throwable $e) {
             return $this->handleError($e);
         }
     }
 
-    private function handleError(RequestException $e): array
+    private function handleError(\Throwable $e): array
     {
-        $status  = $e->hasResponse() ? $e->getResponse()->getStatusCode() : 0;
-        $body    = $e->hasResponse() ? (string) $e->getResponse()->getBody() : '';
+        $status  = ($e instanceof RequestException && $e->hasResponse()) ? $e->getResponse()->getStatusCode() : 0;
+        $body    = ($e instanceof RequestException && $e->hasResponse()) ? (string) $e->getResponse()->getBody() : '';
         $decoded = json_decode($body, true);
+
+        if ($status === 0) {
+            abort(503, 'API_UNAVAILABLE');
+        }
 
         Log::error("ApiClient error [{$status}]: " . $e->getMessage());
 
