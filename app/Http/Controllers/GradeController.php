@@ -2,21 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Grade;
 use Exception;
+use App\Services\ApiClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use PgSql\Lob;
 
 class GradeController extends Controller
 {
+    private ApiClient $api;
+
+    public function __construct(ApiClient $api)
+    {
+        $this->api = $api;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $grades = Grade::all();
-        return view("admin.grades.index",compact("grades"));
+        $response = $this->api->getGradesManage();
+        $grades   = collect($response['data'] ?? (isset($response['error']) ? [] : $response));
+
+        return view("admin.grades.index", compact("grades"));
     }
 
     /**
@@ -33,17 +41,21 @@ class GradeController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            "grade"=>"required|string|unique:grades"
+            "grade" => "required|string",
         ]);
 
         try {
-            $grade = new Grade;
-            $grade->grade = $request->grade;
-            $grade->save();
+            $result = $this->api->createGrade(['grade' => $request->grade]);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Une erreur est survenue");
+                return back()->withInput();
+            }
+
             toastr()->success("Grade créé avec succès");
             return back();
         } catch (Exception $e) {
-            Log::channel("loggin")->error($e->getMessage());
+            Log::error($e->getMessage());
             toastr()->error("Une erreur est survenue");
             return back();
         }
@@ -62,12 +74,16 @@ class GradeController extends Controller
      */
     public function edit(string $id)
     {
-        $grade = Grade::find($id);
-        if($grade==null){
+        $result = $this->api->getGradeManage($id);
+
+        if (empty($result) || !empty($result['error'])) {
             toastr()->warning("Impossible de traiter cette requête");
             return back();
         }
-        return view("admin.grades.edit",compact("grade"));
+
+        $grade = (object) ($result['data'] ?? $result);
+
+        return view("admin.grades.edit", compact("grade"));
     }
 
     /**
@@ -75,28 +91,25 @@ class GradeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-
         $request->validate([
-            "grade"=>"required|string"
+            "grade" => "required|string",
         ]);
 
-        $grade = Grade::find($id);
-        if($grade==null){
-            toastr()->warning("Impossible de traiter cette requête");
-            return back();
-        }
-
         try {
-            $grade->grade = $request->grade;
-            $grade->save();
+            $result = $this->api->updateGrade($id, ['grade' => $request->grade]);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Une erreur est survenue");
+                return back()->withInput();
+            }
+
             toastr()->success("Grade modifié avec succès");
             return back();
         } catch (Exception $e) {
-            Log::channel("loggin")->error($e->getMessage());
+            Log::error($e->getMessage());
             toastr()->error("Une erreur est survenue");
             return back();
         }
-
     }
 
     /**
@@ -104,18 +117,18 @@ class GradeController extends Controller
      */
     public function destroy(string $id)
     {
-        $grade = Grade::find($id);
-        if($grade==null){
-            toastr()->warning("Impossible de traiter cette requête");
-            return back();
-        }
-
         try {
-            $grade->delete();
+            $result = $this->api->deleteGrade($id);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Une erreur est survenue");
+                return back();
+            }
+
             toastr()->success("Grade supprimé avec succès");
             return back();
         } catch (Exception $e) {
-            Log::channel("loggin")->error($e->getMessage());
+            Log::error($e->getMessage());
             toastr()->error("Une erreur est survenue");
             return back();
         }

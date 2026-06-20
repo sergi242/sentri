@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Grade;
 use App\Models\Demande;
 use App\Models\Impetrant;
+use App\Services\ApiClient;
 use Illuminate\Http\Request;
 use Spipu\Html2Pdf\Html2Pdf;
 use Illuminate\Support\Carbon;
@@ -25,6 +26,13 @@ class UserController extends Controller
     use HasPerformanceOptimization;
 
     use ThrottlesLogins;
+
+    private ApiClient $api;
+
+    public function __construct(ApiClient $api)
+    {
+        $this->api = $api;
+    }
 
     // ---------------------------------------------------------------
     // Helpers de niveau de rôle
@@ -58,15 +66,16 @@ class UserController extends Controller
     // Dashboard / Home
     // ---------------------------------------------------------------
 
-    public function dashboard(){
+    public function dashboard()
+    {
         $demandes = collect(DB::select("select count(*) as nombre from demandes where year(date_demande) = year(curdate())"))->first();
         $today = collect(DB::select("select count(*) as nombre from demandes where day(date_demande) = day(curdate()) and month(date_demande)=month(curdate()) and year(date_demande)=year(curdate()) "))->first();
         $week = collect(DB::select("select count(*) as nombre from demandes where week(date_demande) =week(curdate()) and year(date_demande)=year(curdate()) "))->first();
         $month = collect(DB::select("select count(*) as nombre from demandes where month(date_demande) = month(curdate())  and year(date_demande)=year(curdate()) "))->first();
         $year = collect(DB::select("select count(*) as nombre from demandes where year(date_demande)=year(curdate()) "))->first();
-        $approved = collect(DB::select("select count(*) as nombre from demandes where statut_demande = ? and year(date_demande) = year(curdate())",["Approuvée"]))->first();
-        $pending = collect(DB::select("select count(*) as nombre from demandes where statut_demande = ? and year(date_demande) = year(curdate())",["En attente d'approbation"]))->first();
-        $contentieux = collect(DB::select("select count(*) as nombre from demandes where statut_demande = ? and year(date_demande) = year(curdate())",["Envoyée au contentieux"]))->first();
+        $approved = collect(DB::select("select count(*) as nombre from demandes where statut_demande = ? and year(date_demande) = year(curdate())", ["Approuvée"]))->first();
+        $pending = collect(DB::select("select count(*) as nombre from demandes where statut_demande = ? and year(date_demande) = year(curdate())", ["En attente d'approbation"]))->first();
+        $contentieux = collect(DB::select("select count(*) as nombre from demandes where statut_demande = ? and year(date_demande) = year(curdate())", ["Envoyée au contentieux"]))->first();
         $annee = collect(DB::select("select count(*) as nombre from demandes where year(date_demande) = year(curdate())"))->first();
         $impetrants = collect(DB::select("select count(*) as nombre from impetrants where year(created_at) = year(curdate())"))->first();
         $renouvellements = Demande::groupBy('impetrants_id')->havingRaw('COUNT(impetrants_id) > 1')->get();
@@ -82,10 +91,11 @@ class UserController extends Controller
         $monthFlux = collect(DB::select("select sum(total_entree) as total_entree, sum(total_sortie) as total_sortie from flux_migratoires where month(date_movement)=month(curdate()) and year(date_movement) = year(curdate())"))->first();
         $yearFlux = collect(DB::select("select sum(total_entree) as total_entree, sum(total_sortie) as total_sortie from flux_migratoires where year(date_movement) = year(curdate())"))->first();
 
-        return view("admin.home.dashboard",compact("annee","demandes","impetrants","renouvellements","today","month","approved","pending","contentieux","flux","year","week","todayAtt","weekAtt","monthAtt","yearAtt","todayFlux","weekFlux","monthFlux","yearFlux"));
+        return view("admin.home.dashboard", compact("annee", "demandes", "impetrants", "renouvellements", "today", "month", "approved", "pending", "contentieux", "flux", "year", "week", "todayAtt", "weekAtt", "monthAtt", "yearAtt", "todayFlux", "weekFlux", "monthFlux", "yearFlux"));
     }
 
-    public function home(){
+    public function home()
+    {
         return view("admin.home.home");
     }
 
@@ -95,34 +105,25 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::with(['role', 'grade'])->orderBy('nom');
+        $filters = array_filter([
+            'roles_id'  => $request->roles_id,
+            'grades_id' => $request->grades_id,
+            'active'    => ($request->filled('active') && $request->active !== '') ? $request->active : null,
+            'search'    => $request->search,
+        ], fn($v) => $v !== null && $v !== '');
 
-        if ($request->filled('roles_id')) {
-            $query->where('roles_id', $request->roles_id);
-        }
-        if ($request->filled('grades_id')) {
-            $query->where('grades_id', $request->grades_id);
-        }
-        if ($request->filled('active') && $request->active !== '') {
-            $query->where('active', (int) $request->active);
-        }
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('nom',    'like', "%$s%")
-                  ->orWhere('prenom', 'like', "%$s%")
-                  ->orWhere('email',  'like', "%$s%");
-            });
-        }
+        $response = $this->api->getUsers($filters);
+        $usersRaw = $response['data'] ?? (isset($response['error']) ? [] : $response);
+        $users    = collect($usersRaw)->map(fn($u) => (object) $u);
 
-        $users  = $query->get();
         $roles  = $this->getRolesAutorisés();
         $grades = Grade::orderBy('grade')->get();
 
         return view("admin.users.index", compact("users", "roles", "grades"));
     }
 
-    public function create(){
+    public function create()
+    {
         // Un Admin ne voit pas le rôle SuperAdmin dans le select
         $roles  = $this->getRolesAutorisés();
         $grades = Grade::all();
@@ -134,7 +135,7 @@ class UserController extends Controller
         $request->validate([
             "nom"       => "required|string",
             "prenom"    => "required|string",
-            "email"     => "required|email|unique:users",
+            "email"     => "required|email",
             "roles_id"  => "required|numeric",
             "grades_id" => "required|numeric",
             "active"    => "required|numeric",
@@ -143,7 +144,6 @@ class UserController extends Controller
         ]);
 
         // ── Protection de niveau ────────────────────────────────────
-        // Un non-SuperAdmin ne peut pas créer un utilisateur SuperAdmin
         if (!$this->authIsSuperAdmin()) {
             $roleChoisi = Role::find($request->roles_id);
             if ($roleChoisi && $roleChoisi->lib_role === 'SuperAdmin') {
@@ -151,25 +151,32 @@ class UserController extends Controller
                 return back()->withInput();
             }
         }
-        // ────────────────────────────────────────────────────────────
 
         try {
-            $user = new User();
-            $user->nom      = $request->nom;
-            $user->prenom   = $request->prenom;
-            $user->email    = $request->email;
-            $user->grades_id = $request->grades_id;
-            $user->roles_id  = $request->roles_id;
-            $user->active    = $request->active;
-            $user->password  = Hash::make($request->password);
-            $user->save();
+            $data = [
+                'nom'       => $request->nom,
+                'prenom'    => $request->prenom,
+                'email'     => $request->email,
+                'grades_id' => $request->grades_id,
+                'roles_id'  => $request->roles_id,
+                'active'    => $request->active,
+                'password'  => $request->password,
+            ];
 
-            if ($request->hasFile('photo')) {
+            $result = $this->api->createUser($data);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Une erreur est survenue");
+                return back()->withInput();
+            }
+
+            // Handle photo upload locally if provided
+            if ($request->hasFile('photo') && !empty($result['id'])) {
                 $photo    = $request->file('photo');
-                $filename = 'user_' . $user->id . '.' . $photo->getClientOriginalExtension();
+                $filename = 'user_' . $result['id'] . '.' . $photo->getClientOriginalExtension();
                 $photo->move(public_path('uploads/users'), $filename);
-                $user->photo = $filename;
-                $user->save();
+                // Update photo via API
+                $this->api->updateUser($result['id'], ['photo' => $filename]);
             }
 
             toastr()->success("Utilisateur ajouté avec succès");
@@ -181,23 +188,25 @@ class UserController extends Controller
         }
     }
 
-    public function edit($id){
-        $user = User::find($id);
+    public function edit($id)
+    {
+        $response = $this->api->getUser($id);
 
-        if ($user === null) {
+        if (empty($response) || !empty($response['error'])) {
             toastr()->error("Impossible de traiter cette requête");
             return back();
         }
 
+        $userData = $response['data'] ?? $response;
+        $user     = (object) $userData;
+
         // ── Protection de niveau ────────────────────────────────────
-        // Un Admin ne peut pas modifier un utilisateur SuperAdmin
-        if (!$this->authIsSuperAdmin() && $user->role->lib_role === 'SuperAdmin') {
+        $roleLibelle = is_array($userData['role'] ?? null) ? ($userData['role']['lib_role'] ?? '') : ($userData['lib_role'] ?? '');
+        if (!$this->authIsSuperAdmin() && $roleLibelle === 'SuperAdmin') {
             toastr()->error("Vous n'êtes pas autorisé à modifier un SuperAdmin.");
             return back();
         }
-        // ────────────────────────────────────────────────────────────
 
-        // Un Admin ne voit pas le rôle SuperAdmin dans le select
         $roles  = $this->getRolesAutorisés();
         $grades = Grade::all();
 
@@ -216,22 +225,8 @@ class UserController extends Controller
             "photo"     => "nullable|image|mimes:jpg,jpeg,png|max:2048",
         ]);
 
-        $user = User::find($id);
-
-        if (!$user) {
-            toastr()->error("Utilisateur introuvable");
-            return back();
-        }
-
         // ── Protection de niveau ────────────────────────────────────
         if (!$this->authIsSuperAdmin()) {
-            // 1. Interdit de modifier un SuperAdmin
-            if ($user->role->lib_role === 'SuperAdmin') {
-                toastr()->error("Vous n'êtes pas autorisé à modifier un SuperAdmin.");
-                return back();
-            }
-
-            // 2. Interdit d'attribuer le rôle SuperAdmin
             if ($request->filled('roles_id')) {
                 $roleChoisi = Role::find($request->roles_id);
                 if ($roleChoisi && $roleChoisi->lib_role === 'SuperAdmin') {
@@ -240,27 +235,31 @@ class UserController extends Controller
                 }
             }
         }
-        // ────────────────────────────────────────────────────────────
 
         try {
-            $user->nom       = $request->nom;
-            $user->prenom    = $request->prenom;
-            $user->email     = $request->email;
-            $user->grades_id = $request->grades_id;
-            $user->active    = $request->active;
-            $user->roles_id  = $request->roles_id;
+            $data = [
+                'nom'       => $request->nom,
+                'prenom'    => $request->prenom,
+                'email'     => $request->email,
+                'grades_id' => $request->grades_id,
+                'active'    => $request->active,
+                'roles_id'  => $request->roles_id,
+            ];
 
+            // Handle photo upload locally
             if ($request->hasFile('photo')) {
-                if ($user->photo && file_exists(public_path('uploads/users/' . $user->photo))) {
-                    unlink(public_path('uploads/users/' . $user->photo));
-                }
                 $photo    = $request->file('photo');
-                $filename = 'user_' . $user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
+                $filename = 'user_' . $id . '_' . time() . '.' . $photo->getClientOriginalExtension();
                 $photo->move(public_path('uploads/users'), $filename);
-                $user->photo = $filename;
+                $data['photo'] = $filename;
             }
 
-            $user->save();
+            $result = $this->api->updateUser($id, $data);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Erreur lors de la modification");
+                return back()->withInput();
+            }
 
             toastr()->success("Utilisateur modifié avec succès");
             return back();
@@ -272,7 +271,9 @@ class UserController extends Controller
         }
     }
 
-    public function destroy($id){
+    public function destroy($id)
+    {
+        // Local check for SuperAdmin protection
         $user = User::find($id);
 
         if ($user === null) {
@@ -280,13 +281,18 @@ class UserController extends Controller
             return back();
         }
 
-        // Un Admin ne peut pas supprimer un SuperAdmin
         if (!$this->authIsSuperAdmin() && $user->role->lib_role === 'SuperAdmin') {
             toastr()->error("Vous n'êtes pas autorisé à supprimer un SuperAdmin.");
             return back();
         }
 
-        $user->delete();
+        $result = $this->api->deleteUser($id);
+
+        if (!empty($result['error'])) {
+            toastr()->error($result['message'] ?? "Une erreur est survenue");
+            return back();
+        }
+
         toastr()->success("Utilisateur supprimé avec succès");
         return back();
     }
@@ -300,26 +306,31 @@ class UserController extends Controller
     // ---------------------------------------------------------------
     public function toggleActive($id)
     {
-        $user = User::find($id);
-
-        if (!$user) {
-            toastr()->error("Utilisateur introuvable");
-            return back();
-        }
-        if ($user->id === Auth::id()) {
+        if ($id == Auth::id()) {
             toastr()->error("Vous ne pouvez pas modifier l'état de votre propre compte.");
             return back();
         }
-        if (!$this->authIsSuperAdmin() && $user->role->lib_role === 'SuperAdmin') {
+
+        // Local SuperAdmin check
+        $user = User::find($id);
+        if ($user && !$this->authIsSuperAdmin() && $user->role->lib_role === 'SuperAdmin') {
             toastr()->error("Vous n'êtes pas autorisé à modifier l'état d'un SuperAdmin.");
             return back();
         }
 
         try {
-            $user->active = $user->active ? 0 : 1;
-            $user->save();
-            $label = $user->active ? 'activé' : 'désactivé';
-            toastr()->success("Le compte de {$user->getNomPrenom()} a été {$label}.");
+            $result = $this->api->toggleUserActive($id);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Erreur lors de la mise à jour.");
+                return back();
+            }
+
+            $userData = $result['data'] ?? $result;
+            $active   = $userData['active'] ?? null;
+            $nom      = ($userData['prenom'] ?? '') . ' ' . ($userData['nom'] ?? '');
+            $label    = $active ? 'activé' : 'désactivé';
+            toastr()->success("Le compte de {$nom} a été {$label}.");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             toastr()->error("Erreur lors de la mise à jour.");
@@ -333,33 +344,23 @@ class UserController extends Controller
     // ---------------------------------------------------------------
     public function listePdf(Request $request)
     {
-        $query = User::with(['role', 'grade'])->orderBy('nom');
+        $filters = array_filter([
+            'roles_id'  => $request->roles_id,
+            'grades_id' => $request->grades_id,
+            'active'    => ($request->filled('active') && $request->active !== '') ? $request->active : null,
+            'search'    => $request->search,
+        ], fn($v) => $v !== null && $v !== '');
 
-        if ($request->filled('roles_id')) {
-            $query->where('roles_id', $request->roles_id);
-        }
-        if ($request->filled('grades_id')) {
-            $query->where('grades_id', $request->grades_id);
-        }
-        if ($request->filled('active') && $request->active !== '') {
-            $query->where('active', (int) $request->active);
-        }
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('nom',    'like', "%$s%")
-                  ->orWhere('prenom', 'like', "%$s%")
-                  ->orWhere('email',  'like', "%$s%");
-            });
-        }
         if ($request->filled('ids')) {
             $ids = array_filter(array_map('intval', explode(',', $request->ids)));
             if (!empty($ids)) {
-                $query->whereIn('id', $ids);
+                $filters['ids'] = implode(',', $ids);
             }
         }
 
-        $users       = $query->get();
+        $response    = $this->api->getUsers($filters);
+        $usersRaw    = $response['data'] ?? (isset($response['error']) ? [] : $response);
+        $users       = collect($usersRaw)->map(fn($u) => (object) $u);
         $filtreLabel = $this->buildFiltreLabel($request);
         $dateGen     = now()->setTimezone('Africa/Brazzaville')->isoFormat('D MMMM YYYY [à] HH:mm');
 
@@ -392,11 +393,13 @@ class UserController extends Controller
         return empty($parts) ? 'Tous les agents' : implode(' — ', $parts);
     }
 
-    public function username(){
+    public function username()
+    {
         return "email";
     }
 
-    public function authenticate(Request $request){
+    public function authenticate(Request $request)
+    {
         $request->validate([
             "email"    => "string|required|email",
             "password" => "required"
@@ -424,11 +427,13 @@ class UserController extends Controller
         return redirect()->route("users.home");
     }
 
-    public function change_password_form(){
+    public function change_password_form()
+    {
         return view("admin.users.profile");
     }
 
-    public function change_password(Request $request){
+    public function change_password(Request $request)
+    {
         $request->validate([
             "oldpass"  => "required|string",
             "password" => "required|confirmed|string"
@@ -459,27 +464,26 @@ class UserController extends Controller
 
     public function activites()
     {
-        $today = now()->startOfDay();
+        $response = $this->api->getUsers();
+        $usersRaw = $response['data'] ?? (isset($response['error']) ? [] : $response);
 
-        $users = User::withCount([
-            'demandes as demandes_creees_today' => function ($query) use ($today) {
-                $query->where('created_at', '>=', $today);
-            },
-            'soitTransmis as soit_transmis_today' => function ($query) use ($today) {
-                $query->where('created_at', '>=', $today);
-            },
-        ])->get();
+        // The API may return user activity counts; if not, we fall back to local
+        $users = collect($usersRaw)->map(fn($u) => (object) $u);
 
         return view('admin.users.activites', compact('users'));
     }
 
     public function show($id)
     {
-        $user = User::withCount([
-            'demandes as demandes_creees_count',
-            'soitTransmis as soit_transmis_count',
-            'fluxMigratoires as flux_migratoires_count'
-        ])->findOrFail($id);
+        $response = $this->api->getUser($id);
+
+        if (empty($response) || !empty($response['error'])) {
+            toastr()->error("Utilisateur introuvable");
+            return back();
+        }
+
+        $userData = $response['data'] ?? $response;
+        $user     = (object) $userData;
 
         return view('admin.users.show', compact('user'));
     }
@@ -487,13 +491,19 @@ class UserController extends Controller
     public function resetPassword($id)
     {
         try {
-            $user = User::findOrFail($id);
-            $user->password = bcrypt('123456');
-            $user->save();
+            $result = $this->api->resetUserPassword($id, '123456');
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Erreur lors de la réinitialisation");
+                return back();
+            }
+
             toastr()->success("Mot de passe réinitialisé");
             return back();
         } catch (\Throwable $th) {
             Log::channel("technodev")->error($th->getMessage());
+            toastr()->error("Une erreur est survenue");
+            return back();
         }
     }
 
@@ -532,13 +542,13 @@ class UserController extends Controller
             ->get()
             ->map(function ($dem) {
                 return [
-                    'uuid'           => $dem->uuid,
-                    'impetrant_nom'  => $dem->impetrant->nom ?? '',
+                    'uuid'             => $dem->uuid,
+                    'impetrant_nom'    => $dem->impetrant->nom ?? '',
                     'impetrant_prenom' => $dem->impetrant->prenom ?? '',
-                    'type_demande'   => $dem->type_demande,
-                    'statut_demande' => $dem->statut_demande,
-                    'agent_nom'      => $dem->createur ? $dem->createur->getNomPrenom() : 'Non défini',
-                    'heure'          => Carbon::parse($dem->created_at)->format('H:i'),
+                    'type_demande'     => $dem->type_demande,
+                    'statut_demande'   => $dem->statut_demande,
+                    'agent_nom'        => $dem->createur ? $dem->createur->getNomPrenom() : 'Non défini',
+                    'heure'            => Carbon::parse($dem->created_at)->format('H:i'),
                 ];
             });
 
@@ -566,7 +576,13 @@ class UserController extends Controller
         $commentaires    = $request->input('commentaire', '');
         $selectedSection = $request->input('section', 'Toutes les sections');
         $signataireId    = $request->input('signataire');
-        $signataire      = $signataireId ? User::find($signataireId) : null;
+
+        // Fetch signataire via API
+        $signataire = null;
+        if ($signataireId) {
+            $sigRes     = $this->api->getUser($signataireId);
+            $signataire = !empty($sigRes['error']) ? null : (object) ($sigRes['data'] ?? $sigRes);
+        }
 
         $sectionsConfig = config('sections.sections');
         $division = null;
@@ -582,27 +598,21 @@ class UserController extends Controller
             }
         }
 
-        $users = User::withCount([
-            'demandes' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            },
-            'demandes as demandes_visa_count' => function ($query) use ($startDate, $endDate) {
-                $query->where('type_demande', 'Visa')->whereBetween('created_at', [$startDate, $endDate]);
-            },
-            'demandes as demandes_crt_count' => function ($query) use ($startDate, $endDate) {
-                $query->where('type_demande', 'Carte de résident temporaire')->whereBetween('created_at', [$startDate, $endDate]);
-            },
-            'soitTransmis' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            },
-        ])->get();
-
-        $users = $users->filter(function ($user) {
-            return $user->demandes_count > 0
-                || $user->demandes_visa_count > 0
-                || $user->demandes_crt_count > 0
-                || $user->soit_transmis_count > 0;
-        });
+        // Fetch users via API
+        $response = $this->api->getUsers([
+            'start_date' => $startDate->toDateString(),
+            'end_date'   => $endDate->toDateString(),
+            'with_stats' => 1,
+        ]);
+        $usersRaw = $response['data'] ?? (isset($response['error']) ? [] : $response);
+        $users    = collect($usersRaw)
+            ->map(fn($u) => (object) $u)
+            ->filter(function ($user) {
+                return ($user->demandes_count ?? 0) > 0
+                    || ($user->demandes_visa_count ?? 0) > 0
+                    || ($user->demandes_crt_count ?? 0) > 0
+                    || ($user->soit_transmis_count ?? 0) > 0;
+            });
 
         $html = view('admin.reporting.users.user', compact(
             'entete', 'users', 'startDate', 'endDate',
@@ -663,19 +673,19 @@ class UserController extends Controller
             $previousEnd   = $startDate->copy()->subDay();
 
             $currentStats = [
-                'demandes'     => Demande::where('created_by', $id)->whereBetween('created_at', [$startDate, $endDate])->count(),
-                'approuvees'   => Demande::where('created_by', $id)->where('statut_demande', 'Approuvée')->whereBetween('created_at', [$startDate, $endDate])->count(),
-                'contentieux'  => Demande::where('created_by', $id)->where('statut_demande', 'LIKE', '%contentieux%')->whereBetween('created_at', [$startDate, $endDate])->count(),
-                'attente'      => Demande::where('created_by', $id)->where('statut_demande', "En attente d'approbation")->whereBetween('created_at', [$startDate, $endDate])->count(),
-                'soit_transmis'=> SoitTransmis::where('created_by', $id)->whereBetween('created_at', [$startDate, $endDate])->count(),
+                'demandes'      => Demande::where('created_by', $id)->whereBetween('created_at', [$startDate, $endDate])->count(),
+                'approuvees'    => Demande::where('created_by', $id)->where('statut_demande', 'Approuvée')->whereBetween('created_at', [$startDate, $endDate])->count(),
+                'contentieux'   => Demande::where('created_by', $id)->where('statut_demande', 'LIKE', '%contentieux%')->whereBetween('created_at', [$startDate, $endDate])->count(),
+                'attente'       => Demande::where('created_by', $id)->where('statut_demande', "En attente d'approbation")->whereBetween('created_at', [$startDate, $endDate])->count(),
+                'soit_transmis' => SoitTransmis::where('created_by', $id)->whereBetween('created_at', [$startDate, $endDate])->count(),
             ];
 
             $previousStats = [
-                'demandes'     => Demande::where('created_by', $id)->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
-                'approuvees'   => Demande::where('created_by', $id)->where('statut_demande', 'Approuvée')->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
-                'contentieux'  => Demande::where('created_by', $id)->where('statut_demande', 'LIKE', '%contentieux%')->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
-                'attente'      => Demande::where('created_by', $id)->where('statut_demande', "En attente d'approbation")->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
-                'soit_transmis'=> SoitTransmis::where('created_by', $id)->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
+                'demandes'      => Demande::where('created_by', $id)->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
+                'approuvees'    => Demande::where('created_by', $id)->where('statut_demande', 'Approuvée')->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
+                'contentieux'   => Demande::where('created_by', $id)->where('statut_demande', 'LIKE', '%contentieux%')->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
+                'attente'       => Demande::where('created_by', $id)->where('statut_demande', "En attente d'approbation")->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
+                'soit_transmis' => SoitTransmis::where('created_by', $id)->whereBetween('created_at', [$previousStart, $previousEnd])->count(),
             ];
 
             $variations = [];
@@ -722,8 +732,10 @@ class UserController extends Controller
     {
         $texts = [];
 
+        $nomPrenom = method_exists($user, 'getNomPrenom') ? $user->getNomPrenom() : (($user->prenom ?? '') . ' ' . ($user->nom ?? ''));
+
         if ($variations['demandes']['trend'] == 'hausse') {
-            $texts[] = "L'agent {$user->getNomPrenom()} a enregistré une hausse significative de {$variations['demandes']['pct']}% du volume de demandes traitées par rapport à la période précédente ({$variations['demandes']['diff']} demandes supplémentaires). Cette progression témoigne d'une productivité accrue.";
+            $texts[] = "L'agent {$nomPrenom} a enregistré une hausse significative de {$variations['demandes']['pct']}% du volume de demandes traitées par rapport à la période précédente ({$variations['demandes']['diff']} demandes supplémentaires). Cette progression témoigne d'une productivité accrue.";
         } elseif ($variations['demandes']['trend'] == 'baisse') {
             $texts[] = "On constate une baisse de {$variations['demandes']['pct']}% du nombre de demandes créées par rapport à la période précédente ({$variations['demandes']['diff']} demandes en moins). Cette diminution peut s'expliquer par une réaffectation temporaire ou une période d'activité réduite.";
         } else {

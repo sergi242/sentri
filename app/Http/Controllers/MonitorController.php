@@ -5,14 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\UserSession;
+use App\Services\ApiClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class MonitorController extends Controller
 {
-    private string $tz     = 'Africa/Brazzaville';
+    private string $tz      = 'Africa/Brazzaville';
     private string $tzMysql = '+01:00'; // UTC+1
+
+    private ApiClient $api;
+
+    public function __construct(ApiClient $api)
+    {
+        $this->api = $api;
+    }
 
     public function index()
     {
@@ -20,22 +28,38 @@ class MonitorController extends Controller
     }
 
     /**
-     * Ping — vérifie que la session est encore valide
+     * Ping — vérifie que la session est encore valide et l'API backend
      */
     public function ping()
     {
-        return response()->json(['ok' => true]);
+        $apiResult = $this->api->pingMonitor();
+
+        return response()->json(['ok' => empty($apiResult['error'])]);
     }
 
     /**
-     * Feed principal
+     * Feed principal — via API backend
      */
     public function feed()
+    {
+        $result = $this->api->getMonitorFeed();
+
+        if (!empty($result['error'])) {
+            // Fallback to local if API unavailable
+            return $this->feedLocal();
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * Fallback local feed implementation
+     */
+    private function feedLocal()
     {
         $now   = Carbon::now($this->tz);
         $today = $now->toDateString();
 
-        // ── Logs récents ──────────────────────────────────────────────────
         $logs = AuditLog::orderBy('created_at', 'desc')
             ->limit(300)
             ->get()
@@ -57,7 +81,6 @@ class MonitorController extends Controller
                 'timestamp'  => Carbon::parse($l->created_at)->timestamp,
             ]);
 
-        // ── Utilisateurs actifs (15 dernières minutes) ────────────────────
         $cutoff15Utc = $now->copy()->subMinutes(15)->utc()->toDateTimeString();
         $cutoff5     = $now->copy()->subMinutes(5);
 
@@ -111,7 +134,6 @@ class MonitorController extends Controller
                 ];
             });
 
-        // ── Stats globales ────────────────────────────────────────────────
         $tz = $this->tzMysql;
 
         $totalToday    = AuditLog::whereRaw("DATE(CONVERT_TZ(created_at,'+00:00',?)) = ?", [$tz, $today])->count();
@@ -119,7 +141,6 @@ class MonitorController extends Controller
         $totalActions  = AuditLog::whereRaw("DATE(CONVERT_TZ(created_at,'+00:00',?)) = ?", [$tz, $today])->where('method', '!=', 'GET')->count();
         $totalSessions = UserSession::whereRaw("DATE(CONVERT_TZ(login_at,'+00:00',?)) = ?", [$tz, $today])->count();
 
-        // ── Stats par module ──────────────────────────────────────────────
         $moduleStats = AuditLog::select('module', DB::raw('count(*) as total'))
             ->whereRaw("DATE(CONVERT_TZ(created_at,'+00:00',?)) = ?", [$tz, $today])
             ->groupBy('module')
@@ -131,7 +152,6 @@ class MonitorController extends Controller
                 'total'  => $m->total,
             ]);
 
-        // ── Activité horaire ──────────────────────────────────────────────
         $hourlyRaw = AuditLog::selectRaw(
                 "HOUR(CONVERT_TZ(created_at,'+00:00',?)) as hour, count(*) as total",
                 [$tz]
@@ -174,7 +194,7 @@ class MonitorController extends Controller
         $now    = Carbon::now($this->tz);
         $tz     = $this->tzMysql;
 
-        $from = match($period) {
+        $from = match ($period) {
             'day'   => $now->copy()->startOfDay()->utc(),
             'week'  => $now->copy()->startOfWeek()->utc(),
             'month' => $now->copy()->startOfMonth()->utc(),
@@ -212,7 +232,6 @@ class MonitorController extends Controller
             'errors'        => $logs->whereIn('status', ['failed', 'forbidden'])->count(),
         ];
 
-        // Fix : toArray() pour avoir les clés module_raw correctes
         $moduleBreakdown = $logs
             ->groupBy('module_raw')
             ->map(fn($g) => $g->count())
@@ -236,13 +255,11 @@ class MonitorController extends Controller
                 'ip'        => $s->ip_address,
             ]);
 
-        // Présence totale
         $totalPresenceSec = (int) UserSession::where('user_id', $userId)
             ->where('login_at', '>=', $from)
             ->whereNotNull('duration_seconds')
             ->sum('duration_seconds');
 
-        // Session active en cours
         $activeSession = UserSession::where('user_id', $userId)
             ->where('status', 'active')
             ->latest('login_at')
@@ -254,7 +271,6 @@ class MonitorController extends Controller
             $totalPresenceSec += (int) Carbon::parse($activeSession->login_at)->diffInSeconds($now);
         }
 
-        // Activité par jour
         $dailyActivity = AuditLog::where('user_id', $userId)
             ->where('created_at', '>=', $from)
             ->selectRaw("DATE(CONVERT_TZ(created_at,'+00:00',?)) as day, count(*) as total", [$tz])

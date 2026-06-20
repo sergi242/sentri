@@ -150,6 +150,252 @@ class ApiClient
         }
     }
 
+    // ── Users ────────────────────────────────────────────────────────────────
+
+    public function getUsers(?array $filters = []): array
+    {
+        return $this->get('users', $filters ?? []);
+    }
+
+    public function getUser($id): array
+    {
+        return $this->get("users/{$id}");
+    }
+
+    public function createUser(array $data): array
+    {
+        return $this->post('users', $data);
+    }
+
+    public function updateUser($id, array $data): array
+    {
+        return $this->put("users/{$id}", $data);
+    }
+
+    public function deleteUser($id): array
+    {
+        return $this->delete("users/{$id}");
+    }
+
+    public function toggleUserActive($id): array
+    {
+        return $this->post("users/{$id}/toggle-active");
+    }
+
+    public function resetUserPassword($id, string $password): array
+    {
+        return $this->post("users/{$id}/reset-password", ['password' => $password]);
+    }
+
+    // ── Roles (manage) ───────────────────────────────────────────────────────
+
+    public function getRolesManage(): array
+    {
+        return $this->get('roles-manage');
+    }
+
+    public function getRoleManage($id): array
+    {
+        return $this->get("roles-manage/{$id}");
+    }
+
+    public function createRole(array $data): array
+    {
+        return $this->post('roles-manage', $data);
+    }
+
+    public function updateRole($id, array $data): array
+    {
+        return $this->put("roles-manage/{$id}", $data);
+    }
+
+    public function deleteRole($id): array
+    {
+        return $this->delete("roles-manage/{$id}");
+    }
+
+    // ── Grades (manage) ──────────────────────────────────────────────────────
+
+    public function getGradesManage(): array
+    {
+        return $this->get('grades-manage');
+    }
+
+    public function getGradeManage($id): array
+    {
+        return $this->get("grades-manage/{$id}");
+    }
+
+    public function createGrade(array $data): array
+    {
+        return $this->post('grades-manage', $data);
+    }
+
+    public function updateGrade($id, array $data): array
+    {
+        return $this->put("grades-manage/{$id}", $data);
+    }
+
+    public function deleteGrade($id): array
+    {
+        return $this->delete("grades-manage/{$id}");
+    }
+
+    // ── Watchlist ────────────────────────────────────────────────────────────
+
+    public function getWatchlist(?array $filters = []): array
+    {
+        return $this->get('watchlist', $filters ?? []);
+    }
+
+    public function getWatchlistItem($id): array
+    {
+        return $this->get("watchlist/{$id}");
+    }
+
+    public function createWatchlist(array $data): array
+    {
+        return $this->post('watchlist', $data);
+    }
+
+    public function updateWatchlist($id, array $data): array
+    {
+        return $this->put("watchlist/{$id}", $data);
+    }
+
+    public function deleteWatchlist($id): array
+    {
+        return $this->delete("watchlist/{$id}");
+    }
+
+    public function checkWatchlist($impetrantId): array
+    {
+        return $this->get("watchlist/check/{$impetrantId}");
+    }
+
+    // ── Soit-Transmis ────────────────────────────────────────────────────────
+
+    public function getSoitTransmisList(?array $filters = []): array
+    {
+        return $this->get('soit-transmis', $filters ?? []);
+    }
+
+    public function getSoitTransmis($id): array
+    {
+        return $this->get("soit-transmis/{$id}");
+    }
+
+    public function createSoitTransmis(array $data): array
+    {
+        return $this->post('soit-transmis', $data);
+    }
+
+    public function updateSoitTransmis($id, array $data): array
+    {
+        return $this->put("soit-transmis/{$id}", $data);
+    }
+
+    public function deleteSoitTransmis($id): array
+    {
+        return $this->delete("soit-transmis/{$id}");
+    }
+
+    // ── Certificats d'hébergement ─────────────────────────────────────────────
+
+    public function getCertificats(?array $filters = []): array
+    {
+        return $this->get('certificats-hebergement', $filters ?? []);
+    }
+
+    public function getCertificat($id): array
+    {
+        return $this->get("certificats-hebergement/{$id}");
+    }
+
+    public function createCertificat(array $data): array
+    {
+        return $this->post('certificats-hebergement', $data);
+    }
+
+    public function updateCertificat($id, array $data): array
+    {
+        return $this->put("certificats-hebergement/{$id}", $data);
+    }
+
+    public function deleteCertificat($id): array
+    {
+        return $this->delete("certificats-hebergement/{$id}");
+    }
+
+    public function validerCertificat($id): array
+    {
+        return $this->post("certificats-hebergement/{$id}/valider");
+    }
+
+    public function rejeterCertificat($id, string $motif): array
+    {
+        return $this->post("certificats-hebergement/{$id}/rejeter", ['motif_rejet' => $motif]);
+    }
+
+    // ── Statistiques ─────────────────────────────────────────────────────────
+
+    public function getStatistiquesDemandesParJour(?array $params = []): array
+    {
+        return $this->get('statistiques/demandes-par-jour', $params ?? []);
+    }
+
+    public function getStatistiquesDemandesParType(?array $params = []): array
+    {
+        return $this->get('statistiques/demandes-par-type', $params ?? []);
+    }
+
+    public function getStatistiquesDemandesParStatut(?array $params = []): array
+    {
+        return $this->get('statistiques/demandes-par-statut', $params ?? []);
+    }
+
+    public function getStatistiquesDemandesParAgent(?array $params = []): array
+    {
+        return $this->get('statistiques/demandes-par-agent', $params ?? []);
+    }
+
+    public function getStatistiquesFluxParJour(?array $params = []): array
+    {
+        return $this->get('statistiques/flux-par-jour', $params ?? []);
+    }
+
+    public function getStatistiquesFluxParFrontiere(?array $params = []): array
+    {
+        return $this->get('statistiques/flux-par-frontiere', $params ?? []);
+    }
+
+    public function getStatistiquesFluxParNationalite(?array $params = []): array
+    {
+        return $this->get('statistiques/flux-par-nationalite', $params ?? []);
+    }
+
+    public function getStatistiquesComparaison(?array $params = []): array
+    {
+        return $this->get('statistiques/comparaison', $params ?? []);
+    }
+
+    // ── Monitor ───────────────────────────────────────────────────────────────
+
+    public function getMonitor(?int $limit = null): array
+    {
+        return $this->get('monitor', $limit ? ['limit' => $limit] : []);
+    }
+
+    public function getMonitorFeed(): array
+    {
+        return $this->get('monitor/feed');
+    }
+
+    public function pingMonitor(): array
+    {
+        return $this->get('monitor/ping');
+    }
+
     // ── Helpers privés ──────────────────────────────────────────────────────
 
     private function decode($body): array
@@ -191,6 +437,18 @@ class ApiClient
             $response = $this->http->put($uri, [
                 'headers' => $this->authHeaders(),
                 'json'    => $data,
+            ]);
+            return $this->decode($response->getBody());
+        } catch (RequestException $e) {
+            return $this->handleError($e);
+        }
+    }
+
+    private function delete(string $uri): array
+    {
+        try {
+            $response = $this->http->delete($uri, [
+                'headers' => $this->authHeaders(),
             ]);
             return $this->decode($response->getBody());
         } catch (RequestException $e) {

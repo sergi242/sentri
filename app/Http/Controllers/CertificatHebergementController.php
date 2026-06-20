@@ -10,6 +10,7 @@ use App\Models\Hebergeur;
 use App\Models\Impetrant;
 use App\Models\Departement;
 use App\Models\FicheDemande;
+use App\Services\ApiClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,37 +20,42 @@ use App\Models\CategorieSocioProfessionnelle;
 
 class CertificatHebergementController extends Controller
 {
+    private ApiClient $api;
+
+    public function __construct(ApiClient $api)
+    {
+        $this->api = $api;
+    }
+
     // =========================================================================
     // INDEX — Liste de tous les certificats
     // =========================================================================
     public function index(Request $request)
     {
-        $query = CertificatHebergement::with([
-            'hebergeurCongolais', 'hebergeurEtranger', 'hebergeurSociete', 'heberge', 'createur'
-        ])->orderByDesc('created_at');
+        $filters = array_filter([
+            'statut' => $request->statut,
+            'search' => $request->search,
+        ], fn($v) => $v !== null && $v !== '');
 
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
+        $response = $this->api->getCertificats($filters);
+
+        if (!empty($response['error'])) {
+            $certificats = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+            $stats = ['total' => 0, 'en_attente' => 0, 'valides' => 0, 'expires' => 0];
+        } elseif (isset($response['data']) && isset($response['total'])) {
+            $items       = collect($response['data'])->map(fn($c) => (object) $c);
+            $certificats = new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $response['total'],
+                $response['per_page'] ?? 20,
+                $response['current_page'] ?? 1
+            );
+            $stats = $response['stats'] ?? ['total' => $response['total'], 'en_attente' => 0, 'valides' => 0, 'expires' => 0];
+        } else {
+            $items       = collect($response)->map(fn($c) => (object) $c);
+            $certificats = new \Illuminate\Pagination\LengthAwarePaginator($items, $items->count(), 20);
+            $stats       = ['total' => $items->count(), 'en_attente' => 0, 'valides' => 0, 'expires' => 0];
         }
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function($q) use ($s) {
-                $q->where('numero_certificat', 'like', "%{$s}%")
-                  ->orWhereHas('hebergeurCongolais', fn($r) => $r->where('nom', 'like', "%{$s}%")->orWhere('prenom', 'like', "%{$s}%")->orWhere('code_hebergeur', $s))
-                  ->orWhereHas('hebergeurEtranger',  fn($r) => $r->where('nom', 'like', "%{$s}%")->orWhere('prenom', 'like', "%{$s}%"))
-                  ->orWhereHas('hebergeurSociete',   fn($r) => $r->where('nom_employeur', 'like', "%{$s}%"))
-                  ->orWhereHas('heberge',             fn($r) => $r->where('nom', 'like', "%{$s}%")->orWhere('prenom', 'like', "%{$s}%"));
-            });
-        }
-
-        $certificats = $query->paginate(20)->withQueryString();
-
-        $stats = [
-            'total'      => CertificatHebergement::count(),
-            'en_attente' => CertificatHebergement::where('statut', 'En attente')->count(),
-            'valides'    => CertificatHebergement::where('statut', 'Validé')->count(),
-            'expires'    => CertificatHebergement::where('statut', 'Expiré')->count(),
-        ];
 
         return view('admin.certificats-hebergement.index', compact('certificats', 'stats'));
     }
@@ -62,8 +68,7 @@ class CertificatHebergementController extends Controller
         $departements = Departement::all();
         $pays         = Pays::orderBy('lib_pays')->get();
 
-        // Si un numéro de certificat est passé en paramètre (depuis newcrt/newvisa)
-        $numeroCertificat = $request->get('numero_certificat');
+        $numeroCertificat   = $request->get('numero_certificat');
         $certificatExistant = null;
         if ($numeroCertificat) {
             $certificatExistant = CertificatHebergement::with([
@@ -77,7 +82,7 @@ class CertificatHebergementController extends Controller
     }
 
     // =========================================================================
-    // STORE — Enregistrement du certificat
+    // STORE — Enregistrement du certificat (logique locale complexe)
     // =========================================================================
     public function store(Request $request)
     {
@@ -93,47 +98,44 @@ class CertificatHebergementController extends Controller
         try {
             $hebergeurId = null;
 
-            // ── ÉTAPE 1 : Résoudre l'hébergeur ───────────────────────────────
             switch ($request->hebergeur_type) {
 
                 case 'Congolais':
                     if ($request->filled('hebergeur_existant_id')) {
-                        // Hébergeur congolais déjà dans la base
                         $hebergeurId = $request->hebergeur_existant_id;
                     } else {
-                        // Créer un nouvel hébergeur congolais
                         $request->validate([
-                            'heb_nom'          => 'required|string',
-                            'heb_prenom'       => 'required|string',
-                            'heb_sexe'         => 'required',
-                            'heb_telephone'    => 'required|string',
-                            'heb_quartiers_id' => 'required',
-                            'heb_avenue_rue'   => 'required|string',
+                            'heb_nom'            => 'required|string',
+                            'heb_prenom'         => 'required|string',
+                            'heb_sexe'           => 'required',
+                            'heb_telephone'      => 'required|string',
+                            'heb_quartiers_id'   => 'required',
+                            'heb_avenue_rue'     => 'required|string',
                             'heb_numero_adresse' => 'required|string',
                         ]);
 
                         $hebergeur = Hebergeur::create([
-                            'code_hebergeur'       => Hebergeur::genererCode(),
-                            'nom'                  => strtoupper($request->heb_nom),
-                            'prenom'               => ucfirst(strtolower($request->heb_prenom)),
-                            'sexe'                 => $request->heb_sexe,
-                            'date_naissance'       => $request->heb_date_naissance,
-                            'lieu_naissance'       => $request->heb_lieu_naissance,
-                            'nationalite'          => 'Congolaise',
-                            'telephone'            => $request->heb_telephone,
-                            'email'                => $request->heb_email,
-                            'quartiers_id'         => $request->heb_quartiers_id,
-                            'avenue_rue'           => $request->heb_avenue_rue,
-                            'numero_adresse'       => $request->heb_numero_adresse,
-                            'type_piece'           => $request->heb_type_piece,
-                            'numero_piece'         => $request->heb_numero_piece,
-                            'date_emission_piece'  => $request->heb_date_emission_piece,
-                            'date_expiration_piece'=> $request->heb_date_expiration_piece,
-                            'profession'           => $request->heb_profession,
-                            'photo'                => $request->hasFile('heb_photo')
-                                                      ? $request->file('heb_photo')->store('hebergeurs', 'public')
-                                                      : null,
-                            'created_by'           => Auth::id(),
+                            'code_hebergeur'        => Hebergeur::genererCode(),
+                            'nom'                   => strtoupper($request->heb_nom),
+                            'prenom'                => ucfirst(strtolower($request->heb_prenom)),
+                            'sexe'                  => $request->heb_sexe,
+                            'date_naissance'        => $request->heb_date_naissance,
+                            'lieu_naissance'        => $request->heb_lieu_naissance,
+                            'nationalite'           => 'Congolaise',
+                            'telephone'             => $request->heb_telephone,
+                            'email'                 => $request->heb_email,
+                            'quartiers_id'          => $request->heb_quartiers_id,
+                            'avenue_rue'            => $request->heb_avenue_rue,
+                            'numero_adresse'        => $request->heb_numero_adresse,
+                            'type_piece'            => $request->heb_type_piece,
+                            'numero_piece'          => $request->heb_numero_piece,
+                            'date_emission_piece'   => $request->heb_date_emission_piece,
+                            'date_expiration_piece' => $request->heb_date_expiration_piece,
+                            'profession'            => $request->heb_profession,
+                            'photo'                 => $request->hasFile('heb_photo')
+                                                       ? $request->file('heb_photo')->store('hebergeurs', 'public')
+                                                       : null,
+                            'created_by'            => Auth::id(),
                         ]);
                         $hebergeurId = $hebergeur->id;
                     }
@@ -141,7 +143,6 @@ class CertificatHebergementController extends Controller
 
                 case 'Etranger':
                     if ($request->filled('hebergeur_impetrant_id')) {
-                        // Impétrant existant
                         $hebergeurId = $request->hebergeur_impetrant_id;
                         $impetrant   = Impetrant::find($hebergeurId);
                         if ($impetrant && !$impetrant->est_hebergeur) {
@@ -150,13 +151,12 @@ class CertificatHebergementController extends Controller
                             $impetrant->save();
                         }
                     } else {
-                        // Créer un nouvel impétrant hébergeur étranger
                         $request->validate([
-                            'heb_etr_nom'            => 'required|string',
-                            'heb_etr_prenom'         => 'required|string',
-                            'heb_etr_sexe'           => 'required',
-                            'heb_etr_date_naissance' => 'required|date',
-                            'heb_etr_nationalites_id'=> 'required|exists:pays,id',
+                            'heb_etr_nom'             => 'required|string',
+                            'heb_etr_prenom'          => 'required|string',
+                            'heb_etr_sexe'            => 'required',
+                            'heb_etr_date_naissance'  => 'required|date',
+                            'heb_etr_nationalites_id' => 'required|exists:pays,id',
                         ]);
 
                         $uniqueString = strtoupper($request->heb_etr_nom)
@@ -167,13 +167,13 @@ class CertificatHebergementController extends Controller
 
                         $impetrantExistant = Impetrant::where('unique_string', $uniqueString)->first();
                         if (!$impetrantExistant) {
-                            $profilA = new Impetrant(['nom'=>$request->heb_etr_nom,'prenom'=>$request->heb_etr_prenom,
-                                'sexe'=>$request->heb_etr_sexe,'date_naissance'=>$request->heb_etr_date_naissance,
-                                'nationalites_id'=>$request->heb_etr_nationalites_id,'lieu_naissance'=>'']);
-                            $candidats = Impetrant::where('nationalites_id',$request->heb_etr_nationalites_id)->limit(300)->get();
-                            foreach($candidats as $c) {
-                                $r = \App\TechnoDev\src\Classes\IdentitySimilarityService::compare($profilA,$c);
-                                if($r['score']>=75){$impetrantExistant=$c;break;}
+                            $profilA   = new Impetrant(['nom' => $request->heb_etr_nom, 'prenom' => $request->heb_etr_prenom,
+                                'sexe' => $request->heb_etr_sexe, 'date_naissance' => $request->heb_etr_date_naissance,
+                                'nationalites_id' => $request->heb_etr_nationalites_id, 'lieu_naissance' => '']);
+                            $candidats = Impetrant::where('nationalites_id', $request->heb_etr_nationalites_id)->limit(300)->get();
+                            foreach ($candidats as $c) {
+                                $r = \App\TechnoDev\src\Classes\IdentitySimilarityService::compare($profilA, $c);
+                                if ($r['score'] >= 75) { $impetrantExistant = $c; break; }
                             }
                         }
 
@@ -211,7 +211,6 @@ class CertificatHebergementController extends Controller
 
                 case 'Societe':
                     if ($request->filled('hebergeur_employeur_id')) {
-                        // Société existante
                         $hebergeurId = $request->hebergeur_employeur_id;
                         $employeur   = Employeur::find($hebergeurId);
                         if ($employeur && !$employeur->est_hebergeur) {
@@ -220,22 +219,21 @@ class CertificatHebergementController extends Controller
                             $employeur->save();
                         }
                     } else {
-                        // Créer une nouvelle société hébergeuse
                         $request->validate([
-                            'heb_soc_nom'      => 'required|string',
-                            'heb_soc_telephone'=> 'required|string',
-                            'heb_soc_adresse'  => 'required|string',
+                            'heb_soc_nom'       => 'required|string',
+                            'heb_soc_telephone' => 'required|string',
+                            'heb_soc_adresse'   => 'required|string',
                         ]);
 
                         $nouvelEmployeur = Employeur::create([
-                            'nom_employeur'   => strtoupper($request->heb_soc_nom),
-                            'telephone'       => $request->heb_soc_telephone,
-                            'email'           => $request->heb_soc_email,
-                            'type'            => $request->heb_soc_type ?? 'Entreprise',
-                            'adresse_physique'=> $request->heb_soc_adresse,
-                            'registre'        => $request->heb_soc_registre,
-                            'est_hebergeur'   => 1,
-                            'code_hebergeur'  => Hebergeur::genererCode(),
+                            'nom_employeur'    => strtoupper($request->heb_soc_nom),
+                            'telephone'        => $request->heb_soc_telephone,
+                            'email'            => $request->heb_soc_email,
+                            'type'             => $request->heb_soc_type ?? 'Entreprise',
+                            'adresse_physique' => $request->heb_soc_adresse,
+                            'registre'         => $request->heb_soc_registre,
+                            'est_hebergeur'    => 1,
+                            'code_hebergeur'   => Hebergeur::genererCode(),
                         ]);
                         $hebergeurId = $nouvelEmployeur->id;
                     }
@@ -246,20 +244,17 @@ class CertificatHebergementController extends Controller
             $hebergeImpetrantId = null;
 
             if ($request->filled('heberge_impetrant_id')) {
-                // Impétrant existant dans la base
                 $hebergeImpetrantId = $request->heberge_impetrant_id;
 
             } elseif ($request->filled('heberge_nom')) {
-                // Créer un nouvel impétrant sans demande
                 $request->validate([
-                    'heberge_nom'          => 'required|string',
-                    'heberge_prenom'       => 'required|string',
-                    'heberge_sexe'         => 'required',
-                    'heberge_date_naissance' => 'required|date',
+                    'heberge_nom'             => 'required|string',
+                    'heberge_prenom'          => 'required|string',
+                    'heberge_sexe'            => 'required',
+                    'heberge_date_naissance'  => 'required|date',
                     'heberge_nationalites_id' => 'required|exists:pays,id',
                 ]);
 
-                // Vérifier doublons via unique_string puis fuzzy
                 $uniqueString = strtoupper($request->heberge_nom)
                     . strtoupper($request->heberge_prenom)
                     . strtoupper($request->heberge_sexe)
@@ -268,20 +263,20 @@ class CertificatHebergementController extends Controller
 
                 $impetrantExistant = Impetrant::where('unique_string', $uniqueString)->first();
                 if (!$impetrantExistant) {
-                    $profilA = new Impetrant(['nom'=>$request->heberge_nom,'prenom'=>$request->heberge_prenom,
-                        'sexe'=>$request->heberge_sexe,'date_naissance'=>$request->heberge_date_naissance,
-                        'nationalites_id'=>$request->heberge_nationalites_id,'lieu_naissance'=>'']);
-                    $candidats = Impetrant::where('nationalites_id',$request->heberge_nationalites_id)->limit(300)->get();
-                    foreach($candidats as $c) {
-                        $r = \App\TechnoDev\src\Classes\IdentitySimilarityService::compare($profilA,$c);
-                        if($r['score']>=75){$impetrantExistant=$c;break;}
+                    $profilA   = new Impetrant(['nom' => $request->heberge_nom, 'prenom' => $request->heberge_prenom,
+                        'sexe' => $request->heberge_sexe, 'date_naissance' => $request->heberge_date_naissance,
+                        'nationalites_id' => $request->heberge_nationalites_id, 'lieu_naissance' => '']);
+                    $candidats = Impetrant::where('nationalites_id', $request->heberge_nationalites_id)->limit(300)->get();
+                    foreach ($candidats as $c) {
+                        $r = \App\TechnoDev\src\Classes\IdentitySimilarityService::compare($profilA, $c);
+                        if ($r['score'] >= 75) { $impetrantExistant = $c; break; }
                     }
                 }
 
                 if ($impetrantExistant) {
                     $hebergeImpetrantId = $impetrantExistant->id;
                 } else {
-                    $nouvelImpetrant = Impetrant::create([
+                    $nouvelImpetrant    = Impetrant::create([
                         'nom'             => strtoupper($request->heberge_nom),
                         'prenom'          => ucfirst(strtolower($request->heberge_prenom)),
                         'sexe'            => $request->heberge_sexe,
@@ -294,12 +289,11 @@ class CertificatHebergementController extends Controller
                 }
             }
 
-            // ── ÉTAPE 3 : Créer le certificat ────────────────────────────────
+            // ── ÉTAPE 3 : Créer le certificat via API ────────────────────────
             $duree = Carbon::parse($request->date_arrivee_prevue)
                            ->diffInDays(Carbon::parse($request->date_depart_prevue));
 
-            $certificat = CertificatHebergement::create([
-                'numero_certificat'    => CertificatHebergement::genererNumeroCertificat(),
+            $data = [
                 'hebergeur_type'       => $request->hebergeur_type,
                 'hebergeur_id'         => $hebergeurId,
                 'heberge_impetrant_id' => $hebergeImpetrantId,
@@ -310,15 +304,29 @@ class CertificatHebergementController extends Controller
                 'motif_sejour'         => $request->motif_sejour,
                 'type_relation'        => $request->type_relation,
                 'precision_relation'   => $request->precision_relation,
-                'statut'               => 'En attente',
-                'date_emission'        => today(),
-                'date_expiration'      => Carbon::parse($request->date_depart_prevue)->addDays(30),
                 'created_by'           => Auth::id(),
-            ]);
+            ];
+
+            $result = $this->api->createCertificat($data);
 
             DB::commit();
-            toastr()->success("Certificat d'hébergement {$certificat->numero_certificat} créé avec succès");
-            return redirect()->route('certificats-hebergement.show', $certificat->id);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Erreur lors de la création du certificat");
+                return back()->withInput();
+            }
+
+            $certData   = $result['data'] ?? $result;
+            $certId     = $certData['id'] ?? null;
+            $certNumero = $certData['numero_certificat'] ?? '';
+
+            toastr()->success("Certificat d'hébergement {$certNumero} créé avec succès");
+
+            if ($certId) {
+                return redirect()->route('certificats-hebergement.show', $certId);
+            }
+
+            return redirect()->route('certificats-hebergement.index');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -333,57 +341,56 @@ class CertificatHebergementController extends Controller
     // =========================================================================
     public function show(string $id)
     {
-        $certificat = CertificatHebergement::with([
-            'hebergeurCongolais.quartier.arrondissement.departement',
-            'hebergeurEtranger',
-            'hebergeurSociete',
-            'heberge',
-            'demande',
-            'validateur',
-            'createur',
-        ])->findOrFail($id);
+        $response = $this->api->getCertificat($id);
+
+        if (!empty($response['error'])) {
+            toastr()->error("Certificat introuvable");
+            return back();
+        }
+
+        $certData   = $response['data'] ?? $response;
+        $certificat = (object) $certData;
 
         return view('admin.certificats-hebergement.show', compact('certificat'));
     }
 
     // =========================================================================
-    // VALIDER — Approuver un certificat
+    // VALIDER — Approuver un certificat via API
     // =========================================================================
     public function valider(string $id)
     {
-        $certificat = CertificatHebergement::findOrFail($id);
+        $result = $this->api->validerCertificat($id);
 
-        if ($certificat->statut !== 'En attente') {
-            toastr()->warning("Ce certificat ne peut pas être validé dans son état actuel");
+        if (!empty($result['error'])) {
+            toastr()->error($result['message'] ?? "Erreur lors de la validation");
             return back();
         }
 
-        $certificat->update([
-            'statut'    => 'Validé',
-            'valide_par'=> Auth::id(),
-            'valide_le' => now(),
-        ]);
+        $certData   = $result['data'] ?? $result;
+        $numero     = $certData['numero_certificat'] ?? $id;
 
-        toastr()->success("Certificat {$certificat->numero_certificat} validé avec succès");
+        toastr()->success("Certificat {$numero} validé avec succès");
         return back();
     }
 
     // =========================================================================
-    // REJETER — Rejeter un certificat
+    // REJETER — Rejeter un certificat via API
     // =========================================================================
     public function rejeter(Request $request, string $id)
     {
         $request->validate(['motif_rejet' => 'required|string|min:10']);
 
-        $certificat = CertificatHebergement::findOrFail($id);
-        $certificat->update([
-            'statut'      => 'Rejeté',
-            'motif_rejet' => $request->motif_rejet,
-            'valide_par'  => Auth::id(),
-            'valide_le'   => now(),
-        ]);
+        $result = $this->api->rejeterCertificat($id, $request->motif_rejet);
 
-        toastr()->warning("Certificat {$certificat->numero_certificat} rejeté");
+        if (!empty($result['error'])) {
+            toastr()->error($result['message'] ?? "Erreur lors du rejet");
+            return back();
+        }
+
+        $certData = $result['data'] ?? $result;
+        $numero   = $certData['numero_certificat'] ?? $id;
+
+        toastr()->warning("Certificat {$numero} rejeté");
         return back();
     }
 
@@ -417,20 +424,20 @@ class CertificatHebergementController extends Controller
         $to   = $request->get('to',   now()->toDateString());
 
         $stats = [
-            'total'            => CertificatHebergement::whereBetween('created_at', [$from, $to])->count(),
-            'valides'          => CertificatHebergement::where('statut', 'Validé')->whereBetween('created_at', [$from, $to])->count(),
-            'en_attente'       => CertificatHebergement::where('statut', 'En attente')->whereBetween('created_at', [$from, $to])->count(),
-            'rejetes'          => CertificatHebergement::where('statut', 'Rejeté')->whereBetween('created_at', [$from, $to])->count(),
-            'par_type_heberg'  => CertificatHebergement::whereBetween('created_at', [$from, $to])
+            'total'      => CertificatHebergement::whereBetween('created_at', [$from, $to])->count(),
+            'valides'    => CertificatHebergement::where('statut', 'Validé')->whereBetween('created_at', [$from, $to])->count(),
+            'en_attente' => CertificatHebergement::where('statut', 'En attente')->whereBetween('created_at', [$from, $to])->count(),
+            'rejetes'    => CertificatHebergement::where('statut', 'Rejeté')->whereBetween('created_at', [$from, $to])->count(),
+            'par_type_heberg' => CertificatHebergement::whereBetween('created_at', [$from, $to])
                 ->selectRaw('hebergeur_type, COUNT(*) as total')
                 ->groupBy('hebergeur_type')->get(),
-            'par_relation'     => CertificatHebergement::whereBetween('created_at', [$from, $to])
+            'par_relation' => CertificatHebergement::whereBetween('created_at', [$from, $to])
                 ->selectRaw('type_relation, COUNT(*) as total')
                 ->groupBy('type_relation')->get(),
-            'par_mois'         => CertificatHebergement::whereBetween('created_at', [$from, $to])
+            'par_mois' => CertificatHebergement::whereBetween('created_at', [$from, $to])
                 ->selectRaw("DATE_FORMAT(CONVERT_TZ(created_at,'+00:00','+01:00'), '%Y-%m') as mois, COUNT(*) as total")
                 ->groupBy('mois')->orderBy('mois')->get(),
-            'hebergeurs_actifs'=> [
+            'hebergeurs_actifs' => [
                 'congolais' => Hebergeur::count(),
                 'etrangers' => Impetrant::where('est_hebergeur', 1)->count(),
                 'societes'  => Employeur::where('est_hebergeur', 1)->count(),
@@ -441,18 +448,17 @@ class CertificatHebergementController extends Controller
     }
 
     // =========================================================================
-    // DESTROY — Supprimer (soft delete)
+    // DESTROY — Supprimer via API
     // =========================================================================
     public function destroy(string $id)
     {
-        $certificat = CertificatHebergement::findOrFail($id);
+        $result = $this->api->deleteCertificat($id);
 
-        if ($certificat->statut === 'Validé') {
-            toastr()->error("Impossible de supprimer un certificat validé");
+        if (!empty($result['error'])) {
+            toastr()->error($result['message'] ?? "Une erreur est survenue");
             return back();
         }
 
-        $certificat->delete();
         toastr()->success("Certificat supprimé avec succès");
         return redirect()->route('certificats-hebergement.index');
     }
@@ -468,18 +474,17 @@ class CertificatHebergementController extends Controller
             return response()->json(['found' => false]);
         }
 
-        // Chercher dans les 3 tables
         $congolais = Hebergeur::where('code_hebergeur', $code)->first();
         if ($congolais) {
             return response()->json([
-                'found'   => true,
-                'type'    => 'Congolais',
-                'id'      => $congolais->id,
-                'code'    => $congolais->code_hebergeur,
-                'nom'     => strtoupper($congolais->nom),
-                'prenom'  => $congolais->prenom,
-                'telephone' => $congolais->telephone,
-                'email'   => $congolais->email,
+                'found'          => true,
+                'type'           => 'Congolais',
+                'id'             => $congolais->id,
+                'code'           => $congolais->code_hebergeur,
+                'nom'            => strtoupper($congolais->nom),
+                'prenom'         => $congolais->prenom,
+                'telephone'      => $congolais->telephone,
+                'email'          => $congolais->email,
                 'nb_certificats' => $congolais->certificats()->count(),
             ]);
         }
@@ -487,13 +492,13 @@ class CertificatHebergementController extends Controller
         $etranger = Impetrant::where('code_hebergeur', $code)->where('est_hebergeur', 1)->first();
         if ($etranger) {
             return response()->json([
-                'found'   => true,
-                'type'    => 'Etranger',
-                'id'      => $etranger->id,
-                'code'    => $etranger->code_hebergeur,
-                'nom'     => strtoupper($etranger->nom),
-                'prenom'  => $etranger->prenom,
-                'telephone' => '',
+                'found'          => true,
+                'type'           => 'Etranger',
+                'id'             => $etranger->id,
+                'code'           => $etranger->code_hebergeur,
+                'nom'            => strtoupper($etranger->nom),
+                'prenom'         => $etranger->prenom,
+                'telephone'      => '',
                 'nb_certificats' => CertificatHebergement::where('hebergeur_type', 'Etranger')->where('hebergeur_id', $etranger->id)->count(),
             ]);
         }
@@ -501,13 +506,13 @@ class CertificatHebergementController extends Controller
         $societe = Employeur::where('code_hebergeur', $code)->where('est_hebergeur', 1)->first();
         if ($societe) {
             return response()->json([
-                'found'   => true,
-                'type'    => 'Societe',
-                'id'      => $societe->id,
-                'code'    => $societe->code_hebergeur,
-                'nom'     => $societe->nom_employeur,
-                'prenom'  => '',
-                'telephone' => $societe->telephone ?? '',
+                'found'          => true,
+                'type'           => 'Societe',
+                'id'             => $societe->id,
+                'code'           => $societe->code_hebergeur,
+                'nom'            => $societe->nom_employeur,
+                'prenom'         => '',
+                'telephone'      => $societe->telephone ?? '',
                 'nb_certificats' => CertificatHebergement::where('hebergeur_type', 'Societe')->where('hebergeur_id', $societe->id)->count(),
             ]);
         }
@@ -536,30 +541,24 @@ class CertificatHebergementController extends Controller
                 break;
 
             case 'Etranger':
-                // Recherche multi-critères : nom, prénom, date naissance, nationalité
                 $query = Impetrant::query();
 
-                // Nom (obligatoire si renseigné)
                 if ($request->filled('nom')) {
                     $query->where('nom', 'like', $request->nom . '%');
                 }
-                // Prénom
                 if ($request->filled('prenom')) {
                     $query->where('prenom', 'like', $request->prenom . '%');
                 }
-                // Date de naissance
                 if ($request->filled('date_naissance')) {
                     $query->where('date_naissance', $request->date_naissance);
                 }
-                // Nationalité
                 if ($request->filled('nationalites_id')) {
                     $query->where('nationalites_id', $request->nationalites_id);
                 }
-                // Fallback : si aucun critère précis, chercher par q global
                 if (!$request->filled('nom') && !$request->filled('prenom')) {
-                    $query->where(function($r) use ($q) {
+                    $query->where(function ($r) use ($q) {
                         $r->where('nom',    'like', "%{$q}%")
-                          ->orWhere('prenom','like', "%{$q}%");
+                          ->orWhere('prenom', 'like', "%{$q}%");
                     });
                 }
 
@@ -584,7 +583,6 @@ class CertificatHebergementController extends Controller
                 break;
 
             case 'Societe':
-                // Chercher TOUS les employeurs (pas seulement est_hebergeur=1)
                 $results = Employeur::where('nom_employeur', 'like', "%{$q}%")
                     ->limit(10)->get()->map(fn($e) => [
                         'id'      => $e->id,
@@ -602,7 +600,8 @@ class CertificatHebergementController extends Controller
 
         return response()->json($results);
     }
-// =========================================================================
+
+    // =========================================================================
     // RELATIONS — Qui a invité qui
     // =========================================================================
     public function relations(Request $request)
@@ -614,69 +613,65 @@ class CertificatHebergementController extends Controller
             'heberge.pays',
             'createur',
         ])->orderByDesc('created_at');
- 
+
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(function($q) use ($s) {
+            $query->where(function ($q) use ($s) {
                 $q->where('numero_certificat', 'like', "%{$s}%")
                   ->orWhereHas('hebergeurCongolais', fn($r) =>
-                        $r->where('nom','like',"%{$s}%")
-                          ->orWhere('prenom','like',"%{$s}%")
+                        $r->where('nom', 'like', "%{$s}%")
+                          ->orWhere('prenom', 'like', "%{$s}%")
                           ->orWhere('code_hebergeur', $s))
                   ->orWhereHas('hebergeurEtranger', fn($r) =>
-                        $r->where('nom','like',"%{$s}%")
-                          ->orWhere('prenom','like',"%{$s}%"))
+                        $r->where('nom', 'like', "%{$s}%")
+                          ->orWhere('prenom', 'like', "%{$s}%"))
                   ->orWhereHas('hebergeurSociete', fn($r) =>
-                        $r->where('nom_employeur','like',"%{$s}%"))
+                        $r->where('nom_employeur', 'like', "%{$s}%"))
                   ->orWhereHas('heberge', fn($r) =>
-                        $r->where('nom','like',"%{$s}%")
-                          ->orWhere('prenom','like',"%{$s}%"));
+                        $r->where('nom', 'like', "%{$s}%")
+                          ->orWhere('prenom', 'like', "%{$s}%"));
             });
         }
- 
+
         if ($request->filled('type')) {
             $query->where('hebergeur_type', $request->type);
         }
- 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
- 
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
         }
- 
         if ($request->filled('to')) {
             $query->whereDate('created_at', '<=', $request->to);
         }
- 
-        // Export CSV
+
         if ($request->get('export') === 'csv') {
             return self::exportRelationsCSV($query->get());
         }
- 
+
         $certificats = $query->paginate(20)->withQueryString();
- 
+
         return view('admin.certificats-hebergement.relations', compact('certificats'));
     }
- 
+
     private static function exportRelationsCSV($certificats)
     {
         $headers = [
             'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="relations_hebergement_'.date('Ymd').'.csv"',
+            'Content-Disposition' => 'attachment; filename="relations_hebergement_' . date('Ymd') . '.csv"',
         ];
- 
-        $callback = function() use ($certificats) {
+
+        $callback = function () use ($certificats) {
             $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
- 
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
             fputcsv($file, [
-                'N° Certificat','Statut','Type hébergeur','Hébergeur','Code hébergeur',
-                'Hébergé','Nationalité hébergé','Relation',
-                'Arrivée prévue','Départ prévu','Durée (jours)','Date émission'
+                'N° Certificat', 'Statut', 'Type hébergeur', 'Hébergeur', 'Code hébergeur',
+                'Hébergé', 'Nationalité hébergé', 'Relation',
+                'Arrivée prévue', 'Départ prévu', 'Durée (jours)', 'Date émission'
             ], ';');
- 
+
             foreach ($certificats as $cert) {
                 fputcsv($file, [
                     $cert->numero_certificat,
@@ -684,22 +679,22 @@ class CertificatHebergementController extends Controller
                     $cert->hebergeur_type,
                     $cert->nom_hebergeur,
                     $cert->code_hebergeur,
-                    $cert->heberge ? strtoupper($cert->heberge->nom).' '.$cert->heberge->prenom : '',
+                    $cert->heberge ? strtoupper($cert->heberge->nom) . ' ' . $cert->heberge->prenom : '',
                     $cert->heberge?->pays?->lib_pays ?? '',
-                    $cert->type_relation.($cert->precision_relation ? ' ('.$cert->precision_relation.')' : ''),
+                    $cert->type_relation . ($cert->precision_relation ? ' (' . $cert->precision_relation . ')' : ''),
                     $cert->date_arrivee_prevue?->format('d/m/Y') ?? '',
                     $cert->date_depart_prevue?->format('d/m/Y') ?? '',
                     $cert->duree_sejour_jours ?? '',
                     $cert->date_emission?->format('d/m/Y') ?? '',
                 ], ';');
             }
- 
+
             fclose($file);
         };
- 
+
         return response()->stream($callback, 200, $headers);
     }
- 
+
     // =========================================================================
     // STATISTIQUES AVANCÉES
     // =========================================================================
@@ -707,49 +702,44 @@ class CertificatHebergementController extends Controller
     {
         $from = $request->get('from', now()->startOfYear()->toDateString());
         $to   = $request->get('to',   now()->toDateString());
- 
-        $base = CertificatHebergement::whereBetween('created_at', [$from.' 00:00:00', $to.' 23:59:59']);
- 
-        // ── KPIs principaux ──────────────────────────────────────────────────
+
+        $base = CertificatHebergement::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59']);
+
         $stats = [
-            'total'       => (clone $base)->count(),
-            'valides'     => (clone $base)->where('statut','Validé')->count(),
-            'en_attente'  => (clone $base)->where('statut','En attente')->count(),
-            'rejetes'     => (clone $base)->where('statut','Rejeté')->count(),
-            'expires'     => (clone $base)->where('statut','Expiré')->count(),
-            'duree_moyenne'=> (clone $base)->avg('duree_sejour_jours') ?? 0,
-            'duree_min'   => (clone $base)->min('duree_sejour_jours'),
-            'duree_max'   => (clone $base)->max('duree_sejour_jours'),
+            'total'         => (clone $base)->count(),
+            'valides'       => (clone $base)->where('statut', 'Validé')->count(),
+            'en_attente'    => (clone $base)->where('statut', 'En attente')->count(),
+            'rejetes'       => (clone $base)->where('statut', 'Rejeté')->count(),
+            'expires'       => (clone $base)->where('statut', 'Expiré')->count(),
+            'duree_moyenne' => (clone $base)->avg('duree_sejour_jours') ?? 0,
+            'duree_min'     => (clone $base)->min('duree_sejour_jours'),
+            'duree_max'     => (clone $base)->max('duree_sejour_jours'),
         ];
- 
-        // Médiane durée
+
         $durees = (clone $base)->whereNotNull('duree_sejour_jours')
                                ->orderBy('duree_sejour_jours')
                                ->pluck('duree_sejour_jours');
-        $count = $durees->count();
+        $count  = $durees->count();
         $stats['duree_mediane'] = $count > 0
             ? ($count % 2 === 0
-                ? ($durees[$count/2 - 1] + $durees[$count/2]) / 2
-                : $durees[(int)($count/2)])
+                ? ($durees[$count / 2 - 1] + $durees[$count / 2]) / 2
+                : $durees[(int) ($count / 2)])
             : 0;
- 
-        // Répartition durées
+
         $stats['durees'] = [
             'court'     => (clone $base)->where('duree_sejour_jours', '<=', 7)->count(),
             'moyen'     => (clone $base)->whereBetween('duree_sejour_jours', [8, 30])->count(),
             'long'      => (clone $base)->whereBetween('duree_sejour_jours', [31, 90])->count(),
             'tres_long' => (clone $base)->where('duree_sejour_jours', '>', 90)->count(),
         ];
- 
-        // ── Hébergeurs actifs ────────────────────────────────────────────────
+
         $stats['hebergeurs'] = [
             'congolais' => \App\Models\Hebergeur::count(),
             'etrangers' => \App\Models\Impetrant::where('est_hebergeur', 1)->count(),
             'societes'  => \App\Models\Employeur::where('est_hebergeur', 1)->count(),
         ];
- 
-        // ── Évolution mensuelle ──────────────────────────────────────────────
-        $stats['par_mois'] = \DB::select("
+
+        $stats['par_mois'] = collect(\DB::select("
             SELECT
                 DATE_FORMAT(CONVERT_TZ(created_at,'+00:00','+01:00'), '%Y-%m') AS mois,
                 COUNT(*) AS total,
@@ -759,21 +749,12 @@ class CertificatHebergementController extends Controller
               AND deleted_at IS NULL
             GROUP BY mois
             ORDER BY mois
-        ", [$from.' 00:00:00', $to.' 23:59:59']);
-        $stats['par_mois'] = collect($stats['par_mois']);
- 
-        // ── Par type hébergeur ───────────────────────────────────────────────
-        $stats['par_type'] = (clone $base)
-            ->selectRaw('hebergeur_type, COUNT(*) as total')
-            ->groupBy('hebergeur_type')->get();
- 
-        // ── Par relation ─────────────────────────────────────────────────────
-        $stats['par_relation'] = (clone $base)
-            ->selectRaw('type_relation, COUNT(*) as total')
-            ->groupBy('type_relation')->get();
- 
-        // ── Top nationalités hébergées ───────────────────────────────────────
-        $stats['nat_hebergees'] = \DB::select("
+        ", [$from . ' 00:00:00', $to . ' 23:59:59']));
+
+        $stats['par_type']     = (clone $base)->selectRaw('hebergeur_type, COUNT(*) as total')->groupBy('hebergeur_type')->get();
+        $stats['par_relation'] = (clone $base)->selectRaw('type_relation, COUNT(*) as total')->groupBy('type_relation')->get();
+
+        $stats['nat_hebergees'] = collect(\DB::select("
             SELECT p.lib_pays AS nationalite, p.code, COUNT(*) AS total
             FROM certificats_hebergement c
             JOIN impetrants i ON i.id = c.heberge_impetrant_id
@@ -783,11 +764,9 @@ class CertificatHebergementController extends Controller
             GROUP BY p.id, p.lib_pays, p.code
             ORDER BY total DESC
             LIMIT 10
-        ", [$from.' 00:00:00', $to.' 23:59:59']);
-        $stats['nat_hebergees'] = collect($stats['nat_hebergees']);
- 
-        // ── Top nationalités hébergeuses (étrangers seulement) ───────────────
-        $stats['nat_hebergeurs'] = \DB::select("
+        ", [$from . ' 00:00:00', $to . ' 23:59:59']));
+
+        $stats['nat_hebergeurs'] = collect(\DB::select("
             SELECT p.lib_pays AS nationalite, p.code, COUNT(*) AS total
             FROM certificats_hebergement c
             JOIN impetrants i ON i.id = c.hebergeur_id AND c.hebergeur_type = 'Etranger'
@@ -797,11 +776,9 @@ class CertificatHebergementController extends Controller
             GROUP BY p.id, p.lib_pays, p.code
             ORDER BY total DESC
             LIMIT 10
-        ", [$from.' 00:00:00', $to.' 23:59:59']);
-        $stats['nat_hebergeurs'] = collect($stats['nat_hebergeurs']);
- 
-        // ── Top hébergeurs actifs ────────────────────────────────────────────
-        $stats['top_hebergeurs'] = \DB::select("
+        ", [$from . ' 00:00:00', $to . ' 23:59:59']));
+
+        $stats['top_hebergeurs'] = collect(\DB::select("
             SELECT
                 hebergeur_type,
                 hebergeur_id,
@@ -828,11 +805,9 @@ class CertificatHebergementController extends Controller
             GROUP BY hebergeur_type, hebergeur_id
             ORDER BY total DESC
             LIMIT 10
-        ", [$from.' 00:00:00', $to.' 23:59:59']);
-        $stats['top_hebergeurs'] = collect($stats['top_hebergeurs']);
- 
-        // ── Par agent ────────────────────────────────────────────────────────
-        $stats['par_agent'] = \DB::select("
+        ", [$from . ' 00:00:00', $to . ' 23:59:59']));
+
+        $stats['par_agent'] = collect(\DB::select("
             SELECT
                 CONCAT(u.prenom, ' ', u.nom) AS agent,
                 COUNT(*) AS total,
@@ -845,12 +820,10 @@ class CertificatHebergementController extends Controller
             GROUP BY u.id, agent
             ORDER BY total DESC
             LIMIT 10
-        ", [$from.' 00:00:00', $to.' 23:59:59']);
-        $stats['par_agent'] = collect($stats['par_agent']);
- 
-        // ── Par jour de la semaine ────────────────────────────────────────────
-        $jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-        $stats['par_jour'] = \DB::select("
+        ", [$from . ' 00:00:00', $to . ' 23:59:59']));
+
+        $jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        $stats['par_jour'] = collect(\DB::select("
             SELECT
                 DAYOFWEEK(CONVERT_TZ(created_at,'+00:00','+01:00')) AS jour_num,
                 COUNT(*) AS total
@@ -859,16 +832,15 @@ class CertificatHebergementController extends Controller
               AND deleted_at IS NULL
             GROUP BY jour_num
             ORDER BY jour_num
-        ", [$from.' 00:00:00', $to.' 23:59:59']);
-        $stats['par_jour'] = collect($stats['par_jour'])->map(function($r) use ($jours) {
+        ", [$from . ' 00:00:00', $to . ' 23:59:59']))->map(function ($r) use ($jours) {
             $r->jour_label = $jours[$r->jour_num - 1] ?? 'Inconnu';
             return $r;
         });
- 
+
         return view('admin.certificats-hebergement.statistiques_avancees',
                     compact('stats', 'from', 'to'));
     }
- 
+
     // =========================================================================
     // API — Recherche impétrant hébergé
     // =========================================================================
@@ -877,8 +849,8 @@ class CertificatHebergementController extends Controller
         $q = trim($request->get('q', ''));
         if (strlen($q) < 2) return response()->json([]);
 
-        $results = Impetrant::where(function($r) use ($q) {
-                $r->where('nom', 'like', "%{$q}%")
+        $results = Impetrant::where(function ($r) use ($q) {
+                $r->where('nom',    'like', "%{$q}%")
                   ->orWhere('prenom', 'like', "%{$q}%");
             })
             ->with('pays')
@@ -913,28 +885,25 @@ class CertificatHebergementController extends Controller
         }
 
         return response()->json([
-            'found'               => true,
-            'id'                  => $certificat->id,
-            'numero'              => $certificat->numero_certificat,
-            'statut'              => $certificat->statut,
-            'nom_hebergeur'       => $certificat->nom_hebergeur,
-            'code_hebergeur'      => $certificat->code_hebergeur,
-            'heberge_id'          => $certificat->heberge_impetrant_id,
-            // Données affichage
-            'heberge_nom'         => $certificat->heberge ? strtoupper($certificat->heberge->nom)   : '',
-            'heberge_prenom'      => $certificat->heberge?->prenom   ?? '',
-            // Données pour auto-remplissage formulaire
-            'heberge_sexe'        => $certificat->heberge?->sexe             ?? '',
-            'heberge_dn'          => $certificat->heberge?->date_naissance   ?? '',
-            'heberge_lieu'        => $certificat->heberge?->lieu_naissance   ?? '',
+            'found'                   => true,
+            'id'                      => $certificat->id,
+            'numero'                  => $certificat->numero_certificat,
+            'statut'                  => $certificat->statut,
+            'nom_hebergeur'           => $certificat->nom_hebergeur,
+            'code_hebergeur'          => $certificat->code_hebergeur,
+            'heberge_id'              => $certificat->heberge_impetrant_id,
+            'heberge_nom'             => $certificat->heberge ? strtoupper($certificat->heberge->nom) : '',
+            'heberge_prenom'          => $certificat->heberge?->prenom ?? '',
+            'heberge_sexe'            => $certificat->heberge?->sexe ?? '',
+            'heberge_dn'              => $certificat->heberge?->date_naissance ?? '',
+            'heberge_lieu'            => $certificat->heberge?->lieu_naissance ?? '',
             'heberge_nationalites_id' => $certificat->heberge?->nationalites_id ?? '',
-            'heberge_nom_pere'    => $certificat->heberge?->nom_pere         ?? '',
-            'heberge_prenom_pere' => $certificat->heberge?->prenom_pere      ?? '',
-            'heberge_nom_mere'    => $certificat->heberge?->nom_mere         ?? '',
-            'heberge_prenom_mere' => $certificat->heberge?->prenom_mere      ?? '',
-            // Dates séjour
-            'date_arrivee'        => $certificat->date_arrivee_prevue?->format('Y-m-d'),
-            'date_depart'         => $certificat->date_depart_prevue?->format('Y-m-d'),
+            'heberge_nom_pere'        => $certificat->heberge?->nom_pere ?? '',
+            'heberge_prenom_pere'     => $certificat->heberge?->prenom_pere ?? '',
+            'heberge_nom_mere'        => $certificat->heberge?->nom_mere ?? '',
+            'heberge_prenom_mere'     => $certificat->heberge?->prenom_mere ?? '',
+            'date_arrivee'            => $certificat->date_arrivee_prevue?->format('Y-m-d'),
+            'date_depart'             => $certificat->date_depart_prevue?->format('Y-m-d'),
         ]);
     }
 }

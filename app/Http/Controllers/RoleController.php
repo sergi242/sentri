@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Fonctionnalite;
 use App\Models\Module;
 use App\Models\Role;
+use App\Services\ApiClient;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,13 @@ class RoleController extends Controller
      * 12 = Monitoring et Audit
      */
     const SUPERADMIN_ONLY_MODULES = [5, 9, 12];
+
+    private ApiClient $api;
+
+    public function __construct(ApiClient $api)
+    {
+        $this->api = $api;
+    }
 
     // ─────────────────────────────────────────────────────────────
     //  Helpers
@@ -49,20 +57,26 @@ class RoleController extends Controller
 
     public function index()
     {
-        $roles = Role::all();
+        $response = $this->api->getRolesManage();
+        $roles    = collect($response['data'] ?? (isset($response['error']) ? [] : $response));
+
         return view('admin.role.index', compact('roles'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'lib_role' => 'required|string|unique:roles',
+            'lib_role' => 'required|string',
         ]);
 
         try {
-            $role = new Role;
-            $role->lib_role = $request->lib_role;
-            $role->save();
+            $result = $this->api->createRole(['lib_role' => $request->lib_role]);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Une erreur est survenue");
+                return back()->withInput();
+            }
+
             toastr()->success('Rôle ajouté avec succès');
             return back();
         } catch (Exception $e) {
@@ -130,9 +144,15 @@ class RoleController extends Controller
         ]);
 
         try {
-            $role->lib_role = $request->lib_role;
-            $role->save();
+            // Update label via API
+            $result = $this->api->updateRole($id, ['lib_role' => $request->lib_role]);
 
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Une erreur est survenue");
+                return back()->withInput();
+            }
+
+            // Sync local fonctionnalites (permissions) — stays local
             $fonctionnalites = $request->fonctionnalites ?? [];
 
             // ── Filtrage : un non-SuperAdmin ne peut pas attribuer
@@ -172,6 +192,7 @@ class RoleController extends Controller
 
     public function destroy($id)
     {
+        // Local check for SuperAdmin protection
         $role = Role::find($id);
 
         if ($role === null) {
@@ -185,8 +206,19 @@ class RoleController extends Controller
             return back();
         }
 
-        $role->delete();
-        toastr()->success('Rôle supprimé avec succès');
-        return back();
+        try {
+            $result = $this->api->deleteRole($id);
+
+            if (!empty($result['error'])) {
+                toastr()->error($result['message'] ?? "Une erreur est survenue");
+                return back();
+            }
+
+            toastr()->success('Rôle supprimé avec succès');
+            return back();
+        } catch (Exception $e) {
+            toastr()->error($e->getMessage());
+            return back();
+        }
     }
 }
