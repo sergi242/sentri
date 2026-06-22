@@ -199,6 +199,7 @@ class ReportingController extends Controller
     ))->render();
 
     $html2pdf->writeHTML($html);
+    if (ob_get_length()) { ob_end_clean(); }
     return $html2pdf->output($nomDocument . ".pdf");
 }
 
@@ -433,6 +434,7 @@ class ReportingController extends Controller
         $html2pdf->setDefaultFont('Times');
         $html2pdf->writeHTML($html);
     
+        if (ob_get_length()) { ob_end_clean(); }
         return $html2pdf->output($nom_document . ".pdf");
     }
     
@@ -576,6 +578,7 @@ class ReportingController extends Controller
             ))->render()
         );
     
+        if (ob_get_length()) { ob_end_clean(); }
         return $html2pdf->output($title . ".pdf");
     }    
     
@@ -597,7 +600,12 @@ class ReportingController extends Controller
         $pdf = 'A';
         
         $html2pdf->writeHTML(view("admin.reporting.stransmis.stransmis", compact('soit_transmis', 'lettre_number', 'signataire', 'demandes'))->render());
-    
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        if (ob_get_length()) { ob_end_clean(); }
         return $html2pdf->output($soit_transmis->numero . ".pdf");
     }
 
@@ -733,6 +741,7 @@ class ReportingController extends Controller
         $html2pdf->setDefaultFont('Arial');
         $pdf = 'A';
         $html2pdf->writeHTML(view("admin.reporting.flux_migratoire.pdf.flux", compact("fronts", "pays", "dtone", "dtwo"))->render());
+        if (ob_get_length()) { ob_end_clean(); }
         return $html2pdf->output(time() . "temp.pdf");
     }
 
@@ -834,6 +843,7 @@ public function generateGlobalPDF(Request $request)
     $html2pdf->writeHTML($html);
 
     $filename = 'Rapport_Global_' . date('Y-m-d_His') . '.pdf';
+    if (ob_get_length()) { ob_end_clean(); }
     return $html2pdf->output($filename);
 }
 }
