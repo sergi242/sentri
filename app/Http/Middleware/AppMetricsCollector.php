@@ -63,7 +63,11 @@ class AppMetricsCollector
             if (!$license) { self::degradeSystem(4); return; }
 
             if ($license->expires_at && now()->gt($license->expires_at)) {
-                self::degradeSystem(5);
+                $graceDays    = (int) config('dmce.licence_grace_days', 7);
+                $daysSinceExp = (int) now()->diffInDays($license->expires_at);
+                if ($daysSinceExp >= $graceDays) {
+                    self::degradeSystem(5);
+                }
                 return;
             }
         } catch (\Throwable $e) {}

@@ -154,9 +154,27 @@ class LicenseService
             return $result;
         }
 
-        // 4. Vérification expiration
+        // 4. Vérification expiration avec période de grâce
         if ($license->expires_at && now()->gt($license->expires_at)) {
-            // Mettre à jour le statut en DB
+            $graceDays     = (int) config('dmce.licence_grace_days', 7);
+            $daysSinceExp  = (int) now()->diffInDays($license->expires_at);
+            $graceLeft     = $graceDays - $daysSinceExp;
+
+            if ($graceLeft > 0) {
+                // Dans la période de grâce : valide mais avertissement fort
+                $result = [
+                    'valid'           => true,
+                    'reason'          => 'Période de grâce',
+                    'license'         => $license,
+                    'days_remaining'  => -$daysSinceExp,
+                    'grace_days_left' => $graceLeft,
+                    'offline'         => false,
+                ];
+                Cache::put(self::CACHE_KEY, $result, 300); // cache court en grâce
+                return $result;
+            }
+
+            // Hors période de grâce — bloquer et marquer expired
             $license->status = 'expired';
             $license->save();
 
