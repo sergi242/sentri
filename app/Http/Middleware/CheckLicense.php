@@ -25,14 +25,13 @@ class CheckLicense
 
         if (isset($validation['license'])) {
             $daysRemaining = $validation['days_remaining'] ?? 0;
-            $graceLeft     = $validation['grace_days_left'] ?? null;
-
-            if ($graceLeft !== null) {
-                session()->flash('danger', "Licence expirée — période de grâce : {$graceLeft} jour(s) restant(s). Renouvelez immédiatement.");
-            } elseif ($daysRemaining < 7 && $daysRemaining > 0) {
+            if ($daysRemaining < 7 && $daysRemaining > 0) {
                 session()->flash('warning', "Votre licence expire dans {$daysRemaining} jour(s)");
             }
-
+            if ($daysRemaining <= 0) {
+                return redirect('/license/locked')
+                    ->with('reason', 'Votre licence a expiré');
+            }
             $request->merge(['license' => $validation['license']]);
         }
 

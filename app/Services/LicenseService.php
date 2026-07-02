@@ -154,33 +154,20 @@ class LicenseService
             return $result;
         }
 
-        // 4. Vérification expiration avec période de grâce
-        if ($license->expires_at && now()->gt($license->expires_at)) {
-            $graceDays     = (int) config('dmce.licence_grace_days', 7);
-            $daysSinceExp  = (int) now()->diffInDays($license->expires_at);
-            $graceLeft     = $graceDays - $daysSinceExp;
+        // 4. Vérification expiration
+        // On normalise expires_at dans le timezone applicatif pour éviter
+        // le décalage UTC↔WAT qui bloque le compteur à "1 jour restant"
+        $tz        = config('app.timezone', 'UTC');
+        $expiresAt = $license->expires_at->setTimezone($tz);
+        $nowLocal  = now($tz);
 
-            if ($graceLeft > 0) {
-                // Dans la période de grâce : valide mais avertissement fort
-                $result = [
-                    'valid'           => true,
-                    'reason'          => 'Période de grâce',
-                    'license'         => $license,
-                    'days_remaining'  => -$daysSinceExp,
-                    'grace_days_left' => $graceLeft,
-                    'offline'         => false,
-                ];
-                Cache::put(self::CACHE_KEY, $result, 300); // cache court en grâce
-                return $result;
-            }
-
-            // Hors période de grâce — bloquer et marquer expired
+        if ($nowLocal->gt($expiresAt)) {
             $license->status = 'expired';
             $license->save();
 
             $result = [
                 'valid'   => false,
-                'reason'  => 'Licence expirée depuis le ' . $license->expires_at->format('d/m/Y'),
+                'reason'  => 'Licence expirée depuis le ' . $expiresAt->format('d/m/Y'),
                 'offline' => false,
             ];
             Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL);
@@ -201,8 +188,8 @@ class LicenseService
             }
         }
 
-        // ✅ Tout est valide
-        $daysRemaining = (int) now()->diffInDays($license->expires_at, false);
+        // ✅ Tout est valide — comparer par jour calendaire (WAT) pour éviter glissement d'heure
+        $daysRemaining = (int) $nowLocal->copy()->startOfDay()->diffInDays($expiresAt->copy()->startOfDay(), false);
 
         $result = [
             'valid'          => true,
