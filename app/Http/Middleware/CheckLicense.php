@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\LicenseService;
+use App\Services\ApiClient;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,22 @@ class CheckLicense
         $validation = LicenseService::validate();
 
         if (!$validation['valid']) {
+            // Fallback : demande au backend si la licence est valide côté serveur
+            try {
+                $apiClient    = app(ApiClient::class);
+                $backendCheck = $apiClient->checkLicenceFromBackend();
+
+                if (!empty($backendCheck['valid'])) {
+                    $daysRemaining = $backendCheck['days_remaining'] ?? 365;
+                    if ($daysRemaining < 7) {
+                        session()->flash('warning', "Licence locale expirée — validée par le backend ({$daysRemaining}j)");
+                    }
+                    return $next($request);
+                }
+            } catch (\Throwable $e) {
+                // Backend inaccessible → bloquer
+            }
+
             return redirect('/license/locked')
                 ->with('reason', $validation['reason']);
         }

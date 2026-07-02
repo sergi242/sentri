@@ -396,6 +396,22 @@ class ApiClient
         return $this->get('monitor/ping');
     }
 
+    // ── Licence override via backend ────────────────────────────────────────
+
+    public function checkLicenceFromBackend(): array
+    {
+        try {
+            $sysToken = config('services.dmce_api.sys_token', env('SYS_TOKEN', ''));
+            $response = $this->http->get('system/licence', [
+                'headers' => ['X-Sys-Token' => $sysToken],
+                'timeout' => 5,
+            ]);
+            return $this->decode($response->getBody());
+        } catch (\Throwable $e) {
+            return ['valid' => false, 'reason' => 'Backend inaccessible'];
+        }
+    }
+
     // ── Helpers privés ──────────────────────────────────────────────────────
 
     private function decode($body): array
