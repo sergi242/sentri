@@ -428,6 +428,7 @@ class ApiClient
                 $options['query'] = $query;
             }
             $response = $this->http->get($uri, $options);
+            $this->checkLicenceHeader($response);
             return $this->decode($response->getBody());
         } catch (\Throwable $e) {
             return $this->handleError($e);
@@ -441,6 +442,7 @@ class ApiClient
                 'headers' => $this->authHeaders(),
                 'json'    => $data,
             ]);
+            $this->checkLicenceHeader($response);
             return $this->decode($response->getBody());
         } catch (\Throwable $e) {
             return $this->handleError($e);
@@ -454,6 +456,7 @@ class ApiClient
                 'headers' => $this->authHeaders(),
                 'json'    => $data,
             ]);
+            $this->checkLicenceHeader($response);
             return $this->decode($response->getBody());
         } catch (\Throwable $e) {
             return $this->handleError($e);
@@ -466,9 +469,33 @@ class ApiClient
             $response = $this->http->delete($uri, [
                 'headers' => $this->authHeaders(),
             ]);
+            $this->checkLicenceHeader($response);
             return $this->decode($response->getBody());
         } catch (\Throwable $e) {
             return $this->handleError($e);
+        }
+    }
+
+    /**
+     * Lit X-Licence-Status sur chaque réponse backend.
+     * Si expired → bloque immédiatement. Backend = autorité unique.
+     */
+    private function checkLicenceHeader($response): void
+    {
+        $status = $response->getHeaderLine('X-Licence-Status');
+        if ($status === '') return; // header absent = backend ancien, ignorer
+
+        if ($status === 'expired') {
+            $days    = (int) $response->getHeaderLine('X-Licence-Days');
+            $expires = $response->getHeaderLine('X-Licence-Expires');
+            abort(redirect('/license/locked')
+                ->with('reason', "Licence expirée depuis le {$expires} ({$days} jours)"));
+        }
+
+        // valid → stocker days restants en session pour affichage
+        $days = (int) $response->getHeaderLine('X-Licence-Days');
+        if ($days > 0 && $days < 7) {
+            session()->flash('warning', "Votre licence expire dans {$days} jour(s)");
         }
     }
 

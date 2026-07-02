@@ -3,10 +3,22 @@
 namespace App\Http\Middleware;
 
 use App\Services\LicenseService;
-use App\Services\ApiClient;
 use Closure;
 use Illuminate\Http\Request;
 
+/**
+ * Vérification de licence — deux couches :
+ *
+ * 1. Locale (vault DB) : vérification rapide initiale.
+ *    Si valide → on passe, le header backend confirmera sur chaque appel API.
+ *
+ * 2. Backend (X-Licence-Status header) : ApiClient vérifie le header
+ *    sur chaque réponse API. Si expired → bloque.
+ *    C'est le backend (VPS) qui fait autorité sur la licence.
+ *
+ * Pour bloquer le système : stop le backend OU mettre LICENCE_EXPIRES_AT
+ * à une date passée dans le .env du backend.
+ */
 class CheckLicense
 {
     public function handle(Request $request, Closure $next)
@@ -20,22 +32,6 @@ class CheckLicense
         $validation = LicenseService::validate();
 
         if (!$validation['valid']) {
-            // Fallback : demande au backend si la licence est valide côté serveur
-            try {
-                $apiClient    = app(ApiClient::class);
-                $backendCheck = $apiClient->checkLicenceFromBackend();
-
-                if (!empty($backendCheck['valid'])) {
-                    $daysRemaining = $backendCheck['days_remaining'] ?? 365;
-                    if ($daysRemaining < 7) {
-                        session()->flash('warning', "Licence locale expirée — validée par le backend ({$daysRemaining}j)");
-                    }
-                    return $next($request);
-                }
-            } catch (\Throwable $e) {
-                // Backend inaccessible → bloquer
-            }
-
             return redirect('/license/locked')
                 ->with('reason', $validation['reason']);
         }
@@ -44,10 +40,6 @@ class CheckLicense
             $daysRemaining = $validation['days_remaining'] ?? 0;
             if ($daysRemaining < 7 && $daysRemaining > 0) {
                 session()->flash('warning', "Votre licence expire dans {$daysRemaining} jour(s)");
-            }
-            if ($daysRemaining <= 0) {
-                return redirect('/license/locked')
-                    ->with('reason', 'Votre licence a expiré');
             }
             $request->merge(['license' => $validation['license']]);
         }
